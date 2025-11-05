@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projection de Revenus d'Assurance</title>
+    <title>Projection de Rentabilité des Offres d'Assurance</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -23,14 +23,14 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
-        /* Style pour rendre le nom du produit sticky et z-index plus haut */
+        /* Style pour la première colonne (Nom du produit) */
         .sticky-col {
             position: sticky;
             left: 0;
             z-index: 20;
             background-color: white; /* Assure que le fond reste blanc lors du défilement */
         }
-        /* Style pour les en-têtes de tableau (multiples niveaux) */
+        /* Style pour les en-têtes de tableau */
         .sticky-header {
             position: sticky;
             top: 0;
@@ -86,7 +86,13 @@
         </h1>
         <p class="text-gray-600 mb-8">
             Ajustez les variables pour comparer la rentabilité nette de l'Offre 1 (AS) et de l'Offre 2 (AP). 
-            <span class="font-bold text-red-600">Le calcul est basé sur 4 ans (48 mois de ventes continues).</span>
+            <span class="font-bold text-red-600">Le calcul est basé sur 4 ans (48 mois de ventes continues).</span> L'analyse des flux s'étend sur 61 mois.
+            <span class="block mt-2 italic text-sm text-gray-700">
+                ⚠️ IMPORTANT: Par défaut, le modèle assume que les volumes de produits de base et les taux de placement (TA) sont **identiques chaque mois** sur toute la période de vente (M1 à M48) pour simplifier la projection de gains et la comparaison.
+            </span>
+            <span class="block mt-1 italic text-sm text-gray-700">
+                ℹ️ Remarque: Pour l'Offre 1, le **Profit Sharing** est comptabilisé dans l'encaissement initial du mois M1 (lors de la vente) par souci de simplification, bien que le versement réel puisse être différé.
+            </span>
         </p>
 
         <!-- Configuration Globale -->
@@ -118,46 +124,13 @@
             </div>
         </div>
         
-        <!-- Variables par Offre (Séparées) -->
+        <!-- Description du déplacement des variables d'attrition (Blocs vides) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- Offre 1 Variables (AS) -->
             <div class="bg-blue-100/50 p-6 card border-2 border-blue-300">
                 <h3 class="text-xl font-bold text-blue-800 mb-4">Offre 1 (AS) - Variables Clés</h3>
-                <div class="space-y-4">
-                    <div class="bg-white p-3 rounded-lg shadow-sm">
-                        <label for="renunciationRate1" class="block text-sm font-medium text-gray-700">Taux de Renonciation (après 60 jours, %)</label>
-                        <input type="number" id="renunciationRate1" value="15" min="0" max="100" class="mt-1 block w-full rounded-lg border-blue-300 shadow-sm p-2 font-semibold border focus:ring-blue-500 focus:border-blue-500" oninput="calculate()">
-                    </div>
-                    <div class="bg-white p-3 rounded-lg shadow-sm">
-                        <label for="churnRate1" class="block text-sm font-medium text-gray-700">Taux de Churn (Mensuel %) <span class="font-bold">(dès M13)</span></label>
-                        <input type="number" id="churnRate1" value="4" min="0" max="100" class="mt-1 block w-full rounded-lg border-blue-300 shadow-sm p-2 font-semibold border focus:ring-blue-500 focus:border-blue-500" oninput="calculate()">
-                    </div>
-                    <!-- NOUVEAU: Durée de vie Max -->
-                    <div class="bg-white p-3 rounded-lg shadow-sm">
-                        <label for="avgContractLife1" class="block text-sm font-medium text-gray-700">Durée de vie Max Contrat (mois)</label>
-                        <input type="number" id="avgContractLife1" value="18" min="1" class="mt-1 block w-full rounded-lg border-blue-300 shadow-sm p-2 font-semibold border focus:ring-blue-500 focus:border-blue-500" oninput="calculate()">
-                    </div>
-                </div>
             </div>
-
-            <!-- Offre 2 Variables (AP) -->
             <div class="bg-green-100/50 p-6 card border-2 border-green-300">
                 <h3 class="text-xl font-bold text-green-800 mb-4">Offre 2 (AP) - Variables Clés</h3>
-                <div class="space-y-4">
-                    <div class="bg-white p-3 rounded-lg shadow-sm">
-                        <label for="renunciationRate2" class="block text-sm font-medium text-gray-700">Taux de Renonciation (après 60 jours, %)</label>
-                        <input type="number" id="renunciationRate2" value="10" min="0" max="100" class="mt-1 block w-full rounded-lg border-green-300 shadow-sm p-2 font-semibold border focus:ring-green-500 focus:border-green-500" oninput="calculate()">
-                    </div>
-                    <div class="bg-white p-3 rounded-lg shadow-sm">
-                        <label for="churnRate2" class="block text-sm font-medium text-gray-700">Taux de Churn (Mensuel %) <span class="font-bold">(dès M13)</span></label>
-                        <input type="number" id="churnRate2" value="2" min="0" max="100" class="mt-1 block w-full rounded-lg border-green-300 shadow-sm p-2 font-semibold border focus:ring-green-500 focus:border-green-500" oninput="calculate()">
-                    </div>
-                     <!-- NOUVEAU: Durée de vie Max -->
-                    <div class="bg-white p-3 rounded-lg shadow-sm">
-                        <label for="avgContractLife2" class="block text-sm font-medium text-gray-700">Durée de vie Max Contrat (mois)</label>
-                        <input type="number" id="avgContractLife2" value="18" min="1" class="mt-1 block w-full rounded-lg border-green-300 shadow-sm p-2 font-semibold border focus:ring-green-500 focus:border-green-500" oninput="calculate()">
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -171,18 +144,28 @@
                     <tr>
                         <th rowspan="2" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider sticky-col bg-gray-100 border-b border-r border-gray-300">Famille de Produit</th>
                         <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider bg-gray-100 border-b border-gray-300">Volume de Base <span class="font-bold">(Mensuel)</span></th>
-                        <th colspan="3" class="px-3 py-2 text-center text-sm font-bold bg-blue-100 text-blue-800 border-b border-blue-300">OFFRE 1 (AS)</th>
-                        <th colspan="3" class="px-3 py-2 text-center text-sm font-bold bg-green-100 text-green-800 border-b border-green-300">OFFRE 2 (AP)</th>
+                        <!-- Colspan ajusté de 3 à 6 pour inclure Renoncement, Churn et Durée de Vie -->
+                        <th colspan="6" class="px-3 py-2 text-center text-sm font-bold bg-blue-100 text-blue-800 border-b border-blue-300">OFFRE 1 (AS)</th>
+                        <!-- Colspan ajusté de 3 à 6 pour inclure Renoncement, Churn et Durée de Vie -->
+                        <th colspan="6" class="px-3 py-2 text-center text-sm font-bold bg-green-100 text-green-800 border-b border-green-300">OFFRE 2 (AP)</th>
                     </tr>
                     <!-- NIVEAU 2 : Détails des métriques -->
                     <tr class="bg-gray-50">
+                        <!-- OFFER 1 COLUMNS -->
                         <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Prix/Mois (€)</th>
                         <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Taux Marge (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-gray-200">Taux d'Attachement (%)</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Taux d'Attachement (%)</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Taux Renonc. (%)</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Taux Churn Mns (%)</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-gray-200">Durée Vie Max (Mois)</th>
                         
+                        <!-- OFFER 2 COLUMNS -->
                         <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Prix/Mois (€)</th>
                         <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Taux Marge (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50">Taux d'Attachement (%)</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Taux d'Attachement (%)</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Taux Renonc. (%)</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Taux Churn Mns (%)</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50">Durée Vie Max (Mois)</th>
                     </tr>
                 </thead>
                 <tbody id="productConfig" class="bg-white divide-y divide-gray-200">
@@ -289,27 +272,30 @@
         <div id="comparisonSummary" class="mt-8 p-6 text-center card bg-gray-800 text-white border-2 border-red-500">
             <p class="text-xl font-bold">SYNTHÈSE DE RENTABILITÉ ACTUALISÉE (VAN)</p>
             <p id="vanWinnerMessage" class="text-3xl font-extrabold mt-2 text-yellow-300">Veuillez effectuer le calcul.</p>
+            <!-- Ligne de différence VAN ajoutée -->
+            <p id="vanDifference" class="text-lg font-semibold mt-1 text-gray-300"></p> 
             <p class="text-sm mt-1">Comparaison basée sur la Valeur Actuelle Nette de tous les flux de trésorerie accumulés sur l'horizon de 61 mois.</p>
         </div>
         
-        <!-- NOUVEAU: Suivi du Parc Client -->
+        <!-- Suivi du Parc Client -->
         <h2 class="text-2xl font-semibold text-gray-800 mb-4 pt-8 border-t border-gray-300 mt-8">Suivi du Parc Client Actif</h2>
         <p id="parkDescription" class="text-gray-600 mb-4">
             Simulation du nombre total de clients actifs chaque mois, en tenant compte des nouvelles ventes,
-            de la renonciation (M3), du churn mensuel exponentiel (M13) et de la fin de vie.
+            de la renonciation (M3), du churn mensuel exponentiel (M13) et de la fin de vie. 
+            Les variables d'attrition sont définies individuellement pour chaque Famille de Produit.
         </p>
         <div id="clientParkDetail" class="bg-white card overflow-x-auto sticky-header-detail">
             <!-- Tableau du Parc Client inséré ici -->
         </div>
 
-        <!-- NOUVEAU: Analyse Détaillée des Revenus -->
+        <!-- Analyse Détaillée des Revenus -->
         <h2 class="text-2xl font-semibold text-gray-800 mb-4 pt-8 border-t border-gray-300 mt-8">Analyse Détaillée des Revenus (Non Actualisés)</h2>
         <p class="text-gray-600 mb-4">Affichage du chiffre d'affaires total (non margé) par mois pour toutes les familles de produits (hors P.S. et Wefix).</p>
         <div id="revenueDetail" class="bg-white card overflow-x-auto sticky-header-detail">
             <!-- Tableau des Revenus inséré ici -->
         </div>
 
-        <!-- MODIFIÉ: Analyse Détaillée de la Marge Nette et des Flux -->
+        <!-- Analyse Détaillée de la Marge Nette et des Flux -->
         <h2 class="text-2xl font-semibold text-gray-800 mb-4 pt-8 border-t border-gray-300 mt-8">Analyse Détaillée de la Marge Nette et des Flux (Cash Flow)</h2>
         <p class="text-gray-600 mb-4">Affichage des flux de trésorerie nets (Marge, P.S., Wefix) par mois (sur 61 mois).</p>
         <div id="cashFlowDetail" class="bg-white card overflow-x-auto sticky-header-detail">
@@ -323,16 +309,18 @@
         // --- CONSTANTES ET DONNÉES DE BASE ---
         const MAX_SALES_MONTHS = 48; // Période de vente (Années 1 à 4)
         const MAX_ANALYSIS_MONTHS = 61; // M1 à M61 (index 0 à 60)
-        const M1_tail_rate = 0.10; // Marge 10% Offre 1 après 12 mois (fixe)
+        const M1_TAIL_RATE = 0.10; // Marge 10% Offre 1 après 12 mois (fixe)
 
         // Définition initiale des produits et de leurs valeurs
+        // Modification: Les taux d'attachement (ta2) sont maintenant égalisés à ta1 par défaut.
         const products = [
+            // r: renunciation, c: churn, l: life, ta: taux attachement
             // L'index 0 est 'iPhones', utilisé pour le calcul Wefix
-            { name: "iPhones", volume: 1000, price1: 19, margin1: 37, ta1: 25, price2: 12, margin2: 35, ta2: 30 },
-            { name: "MacBook", volume: 1000, price1: 14, margin1: 37, ta1: 12, price2: 12, margin2: 35, ta2: 15 },
-            { name: "AirPods", volume: 1000, price1: 8, margin1: 37, ta1: 9, price2: 6, margin2: 35, ta2: 15 },
-            { name: "iPads", volume: 1000, price1: 12, margin1: 37, ta1: 12, price2: 10, margin2: 35, ta2: 15 },
-            { name: "Apple Watch", volume: 1000, price1: 8, margin1: 37, ta1: 15, price2: 6, margin2: 35, ta2: 20 },
+            { name: "iPhones", volume: 1000, price1: 19, margin1: 37, ta1: 25, r1: 15, c1: 4, l1: 18, price2: 12, margin2: 35, ta2: 25, r2: 15, c2: 4, l2: 18 },
+            { name: "MacBook", volume: 1000, price1: 14, margin1: 37, ta1: 12, r1: 15, c1: 4, l1: 18, price2: 12, margin2: 35, ta2: 12, r2: 15, c2: 4, l2: 18 },
+            { name: "AirPods", volume: 1000, price1: 8, margin1: 37, ta1: 9, r1: 15, c1: 4, l1: 18, price2: 6, margin2: 35, ta2: 9, r2: 15, c2: 4, l2: 18 },
+            { name: "iPads", volume: 1000, price1: 12, margin1: 37, ta1: 12, r1: 15, c1: 4, l1: 18, price2: 10, margin2: 35, ta2: 12, r2: 15, c2: 4, l2: 18 },
+            { name: "Apple Watch", volume: 1000, price1: 8, margin1: 37, ta1: 15, r1: 15, c1: 4, l1: 18, price2: 6, margin2: 35, ta2: 15, r2: 15, c2: 4, l2: 18 },
         ];
 
 
@@ -353,42 +341,48 @@
             return new Intl.NumberFormat('fr-FR', {
                 minimumFractionDigits: decimals,
                 maximumFractionDigits: decimals
-            }).format(value);
+            }).format(Math.round(value)); // Arrondi pour les clients/ventes
         }
         
         // --- LOGIQUE DE L'APPLICATION ---
 
         /**
          * Récupère toutes les variables et la configuration produit depuis les inputs du DOM.
+         * Les variables d'attrition sont maintenant lues au niveau de chaque produit.
          */
         function getInputs() {
+            const annualRate = (parseFloat(document.getElementById('discountRate').value) || 0) / 100;
+            
             const inputs = {
-                // Variables Globales
-                renunciationRate1: (parseFloat(document.getElementById('renunciationRate1').value) || 0) / 100,
-                renunciationRate2: (parseFloat(document.getElementById('renunciationRate2').value) || 0) / 100,
-                // Le Churn Rate est maintenant un taux MENSUEL appliqué dès M13
-                churnRate1: (parseFloat(document.getElementById('churnRate1').value) || 0) / 100,
-                churnRate2: (parseFloat(document.getElementById('churnRate2').value) || 0) / 100,
+                // VARIABLES GLOBALES CONSERVÉES
                 profitSharingUnit: parseFloat(document.getElementById('profitSharing').value) || 0,
                 wefixRate: (parseFloat(document.getElementById('wefixRate').value) || 0) / 100,
                 wefixPrice: parseFloat(document.getElementById('wefixPrice').value) || 0,
-                annualRate: (parseFloat(document.getElementById('discountRate').value) || 0) / 100,
-                monthlyRate: (parseFloat(document.getElementById('discountRate').value) || 0) / 100 / 12,
-                
-                // Durée de vie
-                avgContractLife1: parseInt(document.getElementById('avgContractLife1').value) || 1,
-                avgContractLife2: parseInt(document.getElementById('avgContractLife2').value) || 1,
+                annualRate: annualRate,
+                monthlyRate: annualRate / 12,
 
                 // Configuration Produit (mise à jour depuis les inputs)
                 products: products.map((p, index) => ({
                     name: p.name,
                     volume: parseFloat(document.getElementById(`volume_${index}`).value) || 0,
+                    
+                    // Offre 1 - Finance
                     price1: parseFloat(document.getElementById(`price1_${index}`).value) || 0,
                     margin1Rate: (parseFloat(document.getElementById(`margin1_${index}`).value) || 0) / 100,
                     ta1: (parseFloat(document.getElementById(`ta1_${index}`).value) || 0) / 100,
+                    // Offre 1 - Attrition
+                    renunciationRate1: (parseFloat(document.getElementById(`renunciation1_${index}`).value) || 0) / 100,
+                    churnRate1: (parseFloat(document.getElementById(`churn1_${index}`).value) || 0) / 100,
+                    avgContractLife1: parseInt(document.getElementById(`life1_${index}`).value) || 1,
+
+                    // Offre 2 - Finance
                     price2: parseFloat(document.getElementById(`price2_${index}`).value) || 0,
                     margin2Rate: (parseFloat(document.getElementById(`margin2_${index}`).value) || 0) / 100,
                     ta2: (parseFloat(document.getElementById(`ta2_${index}`).value) || 0) / 100,
+                    // Offre 2 - Attrition
+                    renunciationRate2: (parseFloat(document.getElementById(`renunciation2_${index}`).value) || 0) / 100,
+                    churnRate2: (parseFloat(document.getElementById(`churn2_${index}`).value) || 0) / 100,
+                    avgContractLife2: parseInt(document.getElementById(`life2_${index}`).value) || 1,
                 }))
             };
             return inputs;
@@ -399,6 +393,7 @@
          */
         function calculateNPV(cashFlows, monthlyDiscountRate) {
             let npv = 0;
+            // L'index 0 correspond au mois t=0
             for (let t = 0; t < cashFlows.length; t++) {
                 npv += cashFlows[t] / Math.pow(1 + monthlyDiscountRate, t);
             }
@@ -406,9 +401,74 @@
         }
 
         /**
+         * Calcule la population active d'une cohorte pour un mois donné (m).
+         * Utilise les taux de churn/life spécifiques au produit.
+         */
+        function calculateActivePopulation(m, N_cohort, N_eff_cohort, churnRate, maxLife) {
+            if (m >= maxLife) {
+                return 0;
+            }
+            if (m < 2) { 
+                return N_cohort; // M1, M2 (brut, avant renonciation)
+            } else if (m < 12) { 
+                return N_eff_cohort; // M3 à M12 (net renonciation, avant churn)
+            } else { // M13 et + -> Churn Mensuel exponentiel
+                // Exponent = m - 11 (M13 -> exp 1, M14 -> exp 2, ...)
+                const exponent = m - 11; 
+                let P_active = N_eff_cohort * Math.pow((1 - churnRate), exponent);
+                return Math.max(0, P_active);
+            }
+        }
+        
+        /**
+         * Calcule le Cash Flow et le Revenu pour l'Offre 1 (AS) pour un mois (m) donné.
+         */
+        function calculateOffer1CashFlow(m, N_cohort, N_eff_cohort, p, wefixRevenue_cohort) {
+            let marginCF = 0;
+            let revenue = 0;
+            let marginAccumulated = 0;
+            let isUpfront = false;
+            let isTail = false;
+
+            if (m === 0) { 
+                // M1: Encaissement Initial
+                // Marge Avancée (12 mois) + PS + Wefix sont comptabilisés dans le flux de trésorerie M1 (m=0)
+                marginCF = N_eff_cohort * p.price1 * p.margin1Rate * 12; // Marge Avancée (12 mois)
+                revenue = N_cohort * p.price1 * 12; // Revenu (12 mois)
+                marginAccumulated = marginCF;
+                isUpfront = true;
+            } else if (m === 12 || m === 13) { 
+                // M13 et M14: Marge Queue (Air Time)
+                // Note : Le churn n'est pas appliqué ici directement car la P_active est calculée avant
+                const P_active = calculateActivePopulation(m, N_cohort, N_eff_cohort, 0, 999); 
+                if (P_active > 0) {
+                    marginCF = P_active * p.price1 * M1_TAIL_RATE;
+                    revenue = P_active * p.price1;
+                    marginAccumulated = marginCF;
+                    isTail = true;
+                }
+            }
+            // Autres mois (M2 à M12) ont un CF/Revenu de 0 car inclus dans M1.
+            
+            return { cf: marginCF, margin: marginAccumulated, rev: revenue, isUpfront, isTail };
+        }
+
+        /**
+         * Calcule le Cash Flow et le Revenu pour l'Offre 2 (AP) pour un mois (m) donné.
+         * Offre 2 est Marge/Revenu Mensuel.
+         */
+        function calculateOffer2CashFlow(P_active, p) {
+            const marginCF = P_active * p.price2 * p.margin2Rate;
+            const revenue = P_active * p.price2;
+            
+            return { cf: marginCF, margin: marginCF, rev: revenue };
+        }
+
+
+        /**
          * Calcule les flux de trésorerie et les totaux consolidés pour les deux offres.
          */
-        function performCalculations(data) {
+        function runSimulation(data) {
             // Initialisation des totaux globaux (Non Actualisés)
             let totalSales1 = 0, totalSales2 = 0;
             let effectiveClients1 = 0, effectiveClients2 = 0;
@@ -426,127 +486,93 @@
             let REV1_total = new Array(MAX_ANALYSIS_MONTHS).fill(0);
             let REV2_total = new Array(MAX_ANALYSIS_MONTHS).fill(0);
 
-            // Arrays pour Parc Client
+            // Arrays pour Parc Client (Population Active)
             let Park1_total = new Array(MAX_ANALYSIS_MONTHS).fill(0);
             let Park2_total = new Array(MAX_ANALYSIS_MONTHS).fill(0);
             
-            // Les taux de churn sont maintenant mensuels
-            const C1_monthly_rate = data.churnRate1;
-            const C2_monthly_rate = data.churnRate2;
+            // Les taux d'attrition ne sont plus globaux mais lus dans le loop de produit.
 
+            // BOUCLE PRINCIPALE SUR TOUTES LES FAMILLES DE PRODUITS
             data.products.forEach((p, index) => {
-                const MAX_LIFE_1 = data.avgContractLife1;
-                const MAX_LIFE_2 = data.avgContractLife2;
+                // VARIABLES D'ATTRITION SPÉCIFIQUES AU PRODUIT
+                const MAX_LIFE_1 = p.avgContractLife1;
+                const MAX_LIFE_2 = p.avgContractLife2;
+                const C1_monthly_rate = p.churnRate1;
+                const C2_monthly_rate = p.churnRate2;
 
-                // --- Calcul des Clients par cohorte mensuelle (k) ---
-                const N1_cohort = p.volume * p.ta1; 
-                const N_eff1_cohort = N1_cohort * (1 - data.renunciationRate1); 
+                // --- Calcul des Clients par cohorte mensuelle (base) ---
+                const N1_cohort_brut = p.volume * p.ta1; 
+                const N_eff1_cohort = N1_cohort_brut * (1 - p.renunciationRate1); // Utilise le taux de renonciation du produit
                 
-                const N2_cohort = p.volume * p.ta2; 
-                const N_eff2_cohort = N2_cohort * (1 - data.renunciationRate2); 
+                const N2_cohort_brut = p.volume * p.ta2; 
+                const N_eff2_cohort = N2_cohort_brut * (1 - p.renunciationRate2); // Utilise le taux de renonciation du produit
                 
-                const PS_cohort = N1_cohort * data.profitSharingUnit;
+                const PS_cohort = N1_cohort_brut * data.profitSharingUnit;
 
-                // BOUCLE SUR LES 48 COHORTES (k = index de 0 à 47, soit M1 à M48 de vente)
+                // --- BOUCLE SUR LES 48 COHORTES (k = mois de vente, de 0 à 47) ---
                 for (let k = 0; k < MAX_SALES_MONTHS; k++) {
                     
                     // Accumulation des totaux bruts
-                    totalSales1 += N1_cohort;
-                    totalSales2 += N2_cohort;
+                    totalSales1 += N1_cohort_brut;
+                    totalSales2 += N2_cohort_brut;
                     effectiveClients1 += N_eff1_cohort;
                     effectiveClients2 += N_eff2_cohort;
                     totalProfitSharing += PS_cohort;
                     
                     let wefixRevenue_cohort = 0; 
-                    
-                    if (index === 0) { // Uniquement pour iPhones
+                    if (index === 0) { // Uniquement pour iPhones (index 0)
                         const N_wefix_effective = N_eff1_cohort * data.wefixRate;
                         wefixRevenue_cohort = N_wefix_effective * data.wefixPrice;
                         totalWefixRevenue += wefixRevenue_cohort;
                     }
 
 
-                    // --- BOUCLE SUR LA VIE DE LA COHORTE (m) ---
-                    // m = 0 est le Mois 1 d'abonnement
+                    // --- BOUCLE SUR LA VIE DE LA COHORTE (m = mois d'abonnement, de 0 à MAX) ---
                     for (let m = 0; m < MAX_LIFE_1 || m < MAX_LIFE_2; m++) {
-                        const t_analysis = k + m;
+                        const t_analysis = k + m; // Index du mois dans le tableau global (M1=0)
                         if (t_analysis >= MAX_ANALYSIS_MONTHS) break;
-                        
-                        // --- 1. POPULATION ACTIVE POUR LE MOIS M (P_active) ---
-                        
-                        // Offre 1
-                        let P_active_1 = 0;
-                        if (m < MAX_LIFE_1) {
-                            if (m < 2) { 
-                                P_active_1 = N1_cohort; // M1, M2 (brut, avant renonciation)
-                            } else if (m < 12) { 
-                                P_active_1 = N_eff1_cohort; // M3 à M12 (net renonciation)
-                            } else { // M13 à MAX_LIFE_1-1 -> Churn Mensuel exponentiel
-                                const exponent = m - 11; 
-                                P_active_1 = N_eff1_cohort * Math.pow((1 - C1_monthly_rate), exponent);
-                                // S'assurer que le parc n'est pas négatif (même si la durée max le coupe)
-                                P_active_1 = Math.max(0, P_active_1);
-                            }
-                            Park1_total[t_analysis] += P_active_1;
-                        }
-
-                        // Offre 2
-                        let P_active_2 = 0;
-                        if (m < MAX_LIFE_2) {
-                            if (m < 2) { 
-                                P_active_2 = N2_cohort; // M1, M2 (brut, avant renonciation)
-                            } else if (m < 12) { 
-                                P_active_2 = N_eff2_cohort; // M3 à M12 (net renonciation)
-                            } else { // M13 à MAX_LIFE_2-1 -> Churn Mensuel exponentiel
-                                const exponent = m - 11;
-                                P_active_2 = N_eff2_cohort * Math.pow((1 - C2_monthly_rate), exponent);
-                                P_active_2 = Math.max(0, P_active_2);
-                            }
-                            Park2_total[t_analysis] += P_active_2;
-                        }
-                        
-                        
-                        // --- 2. CALCUL DES FLUX (MARGE / REVENU) ---
                         
                         // --- OFFRE 1 (AS) ---
                         if (m < MAX_LIFE_1) {
-                            if (m === 0) { 
-                                // M1: Marge Avancée (12 mois) + PS + Wefix
-                                const M_upfront1_cohort = N_eff1_cohort * p.price1 * p.margin1Rate * 12;
-                                const REV_upfront1_cohort = N1_cohort * p.price1 * 12; // Rev total
+                            const P_active_1 = calculateActivePopulation(m, N1_cohort_brut, N_eff1_cohort, C1_monthly_rate, MAX_LIFE_1);
+                            
+                            if (P_active_1 > 0) {
+                                // Accumulation du Parc Client
+                                Park1_total[t_analysis] += P_active_1;
                                 
-                                CF1_Margin_Only[t_analysis] += M_upfront1_cohort;
-                                CF_PS[t_analysis] += PS_cohort;
-                                CF_Wefix[t_analysis] += wefixRevenue_cohort;
-                                REV1_total[t_analysis] += REV_upfront1_cohort;
+                                // Calcul des flux spécifiques à l'Offre 1 (Marge/Revenu)
+                                const { cf: marginCF, margin: marginAcc, rev: revenue, isUpfront, isTail } = 
+                                    calculateOffer1CashFlow(m, N1_cohort_brut, N_eff1_cohort, p, wefixRevenue_cohort);
                                 
-                                totalMargin1 += M_upfront1_cohort;
-                                upfrontMargin1 += M_upfront1_cohort;
-                            } else if (m === 12 || m === 13) { 
-                                // M13 et M14: Marge Queue (Air Time) - Utilise P_active_1 (Exponentiel)
-                                if (P_active_1 > 0) {
-                                    const M_tail1_monthly = P_active_1 * p.price1 * M1_tail_rate;
-                                    const REV_tail1_monthly = P_active_1 * p.price1;
+                                if(marginCF > 0) {
+                                    CF1_Margin_Only[t_analysis] += marginCF;
+                                    REV1_total[t_analysis] += revenue;
+                                    totalMargin1 += marginAcc;
+                                    if (isUpfront) upfrontMargin1 += marginAcc;
+                                    if (isTail) tailMargin1 += marginAcc;
+                                }
 
-                                    CF1_Margin_Only[t_analysis] += M_tail1_monthly;
-                                    REV1_total[t_analysis] += REV_tail1_monthly;
-                                    totalMargin1 += M_tail1_monthly;
-                                    tailMargin1 += M_tail1_monthly;
+                                if (m === 0) { // M1: Ajout de PS et Wefix
+                                    CF_PS[t_analysis] += PS_cohort;
+                                    CF_Wefix[t_analysis] += wefixRevenue_cohort;
                                 }
                             }
-                            // Note: Les revenus des M2 à M12 (non 13/14) pour AS sont inclus dans Marge Avancée M1.
                         }
-                        
+
                         // --- OFFRE 2 (AP) ---
                         if (m < MAX_LIFE_2) {
-                            // Marge/Revenu Mensuel (basé sur P_active_2)
+                            const P_active_2 = calculateActivePopulation(m, N2_cohort_brut, N_eff2_cohort, C2_monthly_rate, MAX_LIFE_2);
+                            
                             if (P_active_2 > 0) {
-                                const cf_monthly = P_active_2 * p.price2 * p.margin2Rate;
-                                const rev_monthly = P_active_2 * p.price2;
-
-                                CF2_Margin_Only[t_analysis] += cf_monthly;
-                                REV2_total[t_analysis] += rev_monthly;
-                                totalMargin2 += cf_monthly;
+                                // Accumulation du Parc Client
+                                Park2_total[t_analysis] += P_active_2;
+                                
+                                // Calcul des flux (Mensuel)
+                                const { cf: marginCF, margin: marginAcc, rev: revenue } = calculateOffer2CashFlow(P_active_2, p);
+                                
+                                CF2_Margin_Only[t_analysis] += marginCF;
+                                REV2_total[t_analysis] += revenue;
+                                totalMargin2 += marginAcc;
                             }
                         }
                     }
@@ -575,22 +601,19 @@
 
 
         /**
-         * Calcule les totaux cumulés (Gain Net et VAN) jusqu'à un mois donné (M1 à M_N).
+         * Calcule les totaux cumulés (Gain Net) jusqu'à un mois donné (M1 à M_N).
          */
-        function getCumulativeResults(cfArray, upToMonthIndex, monthlyRate) {
+        function getCumulativeResults(cfArray, upToMonthIndex) {
             let cumulativeNetGain = 0;
-            let cumulativeNPV = 0;
             
             for (let t = 0; t <= upToMonthIndex; t++) {
-                const cf = cfArray[t] || 0; 
-                cumulativeNetGain += cf;
-                cumulativeNPV += cf / Math.pow(1 + monthlyRate, t);
+                cumulativeNetGain += cfArray[t] || 0;
             }
-            return { netGain: cumulativeNetGain, npv: cumulativeNPV };
+            return cumulativeNetGain;
         }
 
         /**
-         * Calcule les totaux annuels (non actualisés) pour le Cash Flow Détaillé.
+         * Calcule les totaux annuels (non actualisés) pour le Cash Flow Détaillé (A1 à A4).
          */
         function calculateAnnualTotals(cfArray) {
             const annualTotals = {};
@@ -609,15 +632,12 @@
 
         /**
          * Génère le HTML pour une table de détail (CF, Revenu, ou Parc).
-         * @param {string} title - Titre du tableau
-         * @param {Array<object>} rowsData - { title, cf, bgColor, isCurrency }
-         * @param {number} monthlyRate - Taux d'actualisation mensuel
-         * @param {boolean} showNPV - Afficher ou non la colonne VAN
          */
         function generateDetailTable(title, rowsData, monthlyRate, showNPV) {
             
             // DÉFINITION DE L'UNITÉ
             const isCurrency = rowsData.length > 0 ? rowsData[0].isCurrency : true;
+            const formatter = isCurrency ? (val, dec=0) => formatCurrency(val, dec) : (val, dec=0) => formatNumber(val, dec);
             const unit = isCurrency ? '€' : 'Nb';
 
             // En-têtes de mois M1...M61
@@ -636,7 +656,6 @@
                 
                 const annualTotals = calculateAnnualTotals(cf);
                 const npv = showNPV ? calculateNPV(cf, monthlyRate) : 0;
-                const formatter = isCurrency ? (val, dec=0) => formatCurrency(val, dec) : (val, dec=0) => formatNumber(val, dec);
 
                 // Cellules des 61 mois
                 const cfCells = cf.map((val, i) => {
@@ -744,17 +763,16 @@
          */
         function updateUI(results, inputs) {
             
-            // Calcul des résultats cumulés par année
-            // Utilisation de CF1_Total_Combined et CF2_Margin_Only comme Cash Flow Net
-            const year1_1 = getCumulativeResults(results.CF1_Total_Combined, 11, inputs.monthlyRate);
-            const year2_1 = getCumulativeResults(results.CF1_Total_Combined, 23, inputs.monthlyRate);
-            const year3_1 = getCumulativeResults(results.CF1_Total_Combined, 35, inputs.monthlyRate);
-            const year4_1 = getCumulativeResults(results.CF1_Total_Combined, 47, inputs.monthlyRate);
+            // Calcul des résultats cumulés par année (Gain Net Non Actualisé)
+            const year1_1 = getCumulativeResults(results.CF1_Total_Combined, 11);
+            const year2_1 = getCumulativeResults(results.CF1_Total_Combined, 23);
+            const year3_1 = getCumulativeResults(results.CF1_Total_Combined, 35);
+            const year4_1 = getCumulativeResults(results.CF1_Total_Combined, 47);
             
-            const year1_2 = getCumulativeResults(results.CF2_Margin_Only, 11, inputs.monthlyRate);
-            const year2_2 = getCumulativeResults(results.CF2_Margin_Only, 23, inputs.monthlyRate);
-            const year3_2 = getCumulativeResults(results.CF2_Margin_Only, 35, inputs.monthlyRate);
-            const year4_2 = getCumulativeResults(results.CF2_Margin_Only, 47, inputs.monthlyRate);
+            const year1_2 = getCumulativeResults(results.CF2_Margin_Only, 11);
+            const year2_2 = getCumulativeResults(results.CF2_Margin_Only, 23);
+            const year3_2 = getCumulativeResults(results.CF2_Margin_Only, 35);
+            const year4_2 = getCumulativeResults(results.CF2_Margin_Only, 47);
 
 
             // --- OFFRE 1 (AS) ---
@@ -769,10 +787,10 @@
             document.getElementById('initialCashIn1').textContent = formatCurrency(results.CF1_Total_Combined[0]); 
             document.getElementById('totalNPV1').textContent = formatCurrency(results.totalNPV1);
 
-            document.getElementById('cumulGain1_1').textContent = formatCurrency(year1_1.netGain);
-            document.getElementById('cumulGain1_2').textContent = formatCurrency(year2_1.netGain);
-            document.getElementById('cumulGain1_3').textContent = formatCurrency(year3_1.netGain);
-            document.getElementById('cumulGain1_4').textContent = formatCurrency(year4_1.netGain);
+            document.getElementById('cumulGain1_1').textContent = formatCurrency(year1_1);
+            document.getElementById('cumulGain1_2').textContent = formatCurrency(year2_1);
+            document.getElementById('cumulGain1_3').textContent = formatCurrency(year3_1);
+            document.getElementById('cumulGain1_4').textContent = formatCurrency(year4_1);
 
 
             // --- OFFRE 2 (AP) ---
@@ -783,36 +801,43 @@
             document.getElementById('initialCashIn2').textContent = formatCurrency(results.CF2_Margin_Only[0]);
             document.getElementById('totalNPV2').textContent = formatCurrency(results.totalNPV2);
             
-            document.getElementById('cumulGain2_1').textContent = formatCurrency(year1_2.netGain);
-            document.getElementById('cumulGain2_2').textContent = formatCurrency(year2_2.netGain);
-            document.getElementById('cumulGain2_3').textContent = formatCurrency(year3_2.netGain);
-            document.getElementById('cumulGain2_4').textContent = formatCurrency(year4_2.netGain);
+            document.getElementById('cumulGain2_1').textContent = formatCurrency(year1_2);
+            document.getElementById('cumulGain2_2').textContent = formatCurrency(year2_2);
+            document.getElementById('cumulGain2_3').textContent = formatCurrency(year3_2);
+            document.getElementById('cumulGain2_4').textContent = formatCurrency(year4_2);
             
             // Mise à jour des 3 tables de détail
             updateAllDetailTables(results, inputs);
 
-            // Mise à jour dynamique du texte de description du parc client
+            // Mise à jour dynamique du texte de description du parc client (retiré les variables globales)
             const parkDescriptionP = document.getElementById('parkDescription');
             if (parkDescriptionP) {
                 parkDescriptionP.textContent = `
                     Simulation du nombre total de clients actifs chaque mois, en tenant compte des nouvelles ventes,
                     de la renonciation (M3), du churn mensuel exponentiel (M13) et de la fin de vie. 
-                    L'horizon d'attrition simulé est de ${inputs.avgContractLife1} mois (Offre 1) et ${inputs.avgContractLife2} mois (Offre 2).
+                    Les variables d'attrition sont définies individuellement pour chaque Famille de Produit.
                 `;
             }
 
-            // --- SYNTHÈSE VAN ---
+            // --- SYNTHÈSE VAN (Avec Différence) ---
             const vanWinnerMessage = document.getElementById('vanWinnerMessage');
+            const vanDifferenceDisplay = document.getElementById('vanDifference');
             vanWinnerMessage.classList.remove('text-green-300', 'text-red-300', 'text-yellow-300');
-            
+            vanDifferenceDisplay.classList.remove('text-green-300', 'text-red-300');
+            vanDifferenceDisplay.textContent = "";
+
             if (results.totalNPV1 > results.totalNPV2) {
                 const diff = results.totalNPV1 - results.totalNPV2;
-                vanWinnerMessage.textContent = `L'Offre 1 (AS) gagne ${formatCurrency(diff)} en VAN.`;
+                vanWinnerMessage.textContent = `L'Offre 1 (AS) est plus rentable.`;
                 vanWinnerMessage.classList.add('text-green-300');
+                vanDifferenceDisplay.textContent = `Avantage de l'Offre 1 : ${formatCurrency(diff)} en VAN.`;
+                vanDifferenceDisplay.classList.add('text-green-300');
             } else if (results.totalNPV2 > results.totalNPV1) {
                 const diff = results.totalNPV2 - results.totalNPV1;
-                vanWinnerMessage.textContent = `L'Offre 2 (AP) gagne ${formatCurrency(diff)} en VAN.`;
+                vanWinnerMessage.textContent = `L'Offre 2 (AP) est plus rentable.`;
                 vanWinnerMessage.classList.add('text-red-300');
+                vanDifferenceDisplay.textContent = `Avantage de l'Offre 2 : ${formatCurrency(diff)} en VAN.`;
+                vanDifferenceDisplay.classList.add('text-red-300');
             } else if (results.totalNPV1 > 0) {
                 vanWinnerMessage.textContent = "Les deux offres ont une VAN équivalente.";
                 vanWinnerMessage.classList.add('text-yellow-300');
@@ -832,28 +857,54 @@
                 <tr class="hover:bg-gray-100">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky-col border-r border-gray-300">
                         ${p.name}
-                        ${index === 0 ? '<span title="Le revenu Wefix est uniquement calculé sur les ventes d\'iPhones pour l\'Offre 1." class="text-xs font-bold text-red-500 ml-1">(Wefix Appliqué)</span>' : ''}
+                        ${index === 0 ? '<span title="Le revenu Wefix est uniquement calculé sur les ventes d\'iPhones pour l\'Offre 1." class="text-xs font-bold text-red-500 ml-1">(Wefix)</span>' : ''}
                     </td>
                     <td class="p-2">
                         <input type="number" id="volume_${index}" value="${p.volume}" min="1" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
                     </td>
+                    
+                    <!-- OFFRE 1 - Finance -->
                     <td class="p-2 bg-blue-50 border-l border-r border-blue-200">
                         <input type="number" id="price1_${index}" value="${p.price1}" min="0.01" step="0.01" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
                     </td>
                     <td class="p-2 bg-blue-50 border-r border-blue-200">
                         <input type="number" id="margin1_${index}" value="${p.margin1}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
                     </td>
-                    <td class="p-2 bg-blue-50 border-r border-gray-200">
+                    <td class="p-2 bg-blue-50 border-r border-blue-200">
                         <input type="number" id="ta1_${index}" value="${p.ta1}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
                     </td>
+                    
+                    <!-- OFFRE 1 - Attrition (NOUVEAU) -->
+                    <td class="p-2 bg-blue-50 border-r border-blue-200">
+                        <input type="number" id="renunciation1_${index}" value="${p.r1}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
+                    </td>
+                    <td class="p-2 bg-blue-50 border-r border-blue-200">
+                        <input type="number" id="churn1_${index}" value="${p.c1}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
+                    </td>
+                    <td class="p-2 bg-blue-50 border-r border-gray-200">
+                        <input type="number" id="life1_${index}" value="${p.l1}" min="1" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
+                    </td>
+
+                    <!-- OFFRE 2 - Finance -->
                     <td class="p-2 bg-green-50 border-l border-r border-green-200">
                         <input type="number" id="price2_${index}" value="${p.price2}" min="0.01" step="0.01" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
                     </td>
                     <td class="p-2 bg-green-50 border-r border-green-200">
                         <input type="number" id="margin2_${index}" value="${p.margin2}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
                     </td>
-                    <td class="p-2 bg-green-50">
+                    <td class="p-2 bg-green-50 border-r border-green-200">
                         <input type="number" id="ta2_${index}" value="${p.ta2}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
+                    </td>
+                    
+                    <!-- OFFRE 2 - Attrition (NOUVEAU) -->
+                    <td class="p-2 bg-green-50 border-r border-green-200">
+                        <input type="number" id="renunciation2_${index}" value="${p.r2}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
+                    </td>
+                    <td class="p-2 bg-green-50 border-r border-green-200">
+                        <input type="number" id="churn2_${index}" value="${p.c2}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
+                    </td>
+                    <td class="p-2 bg-green-50">
+                        <input type="number" id="life2_${index}" value="${p.l2}" min="1" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
                     </td>
                 </tr>
             `).join('');
@@ -865,7 +916,7 @@
         function calculate() {
             try {
                 const inputs = getInputs();
-                const results = performCalculations(inputs);
+                const results = runSimulation(inputs);
                 updateUI(results, inputs);
             } catch (error) {
                 console.error("Erreur lors du calcul :", error);
