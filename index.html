@@ -108,11 +108,16 @@
             </div>
         </div>
 
-        <!-- Section 3: Synthèse des Projections (Déplacée en bas) -->
+        <!-- Section 3 & 4: Synthèse des Projections et Parc Client -->
         <div class="xl:w-full space-y-8">
             <h2 class="text-2xl font-bold text-gray-800">3. Synthèse des Projections de Gains sur 4 Ans</h2>
             <div id="results-summary" class="space-y-6 grid grid-cols-1 xl:grid-cols-2 gap-8">
                 <!-- Result Tables will be inserted here by JS -->
+            </div>
+
+            <h2 class="text-2xl font-bold text-gray-800 pt-8 border-t border-gray-300">4. Évolution du Parc Client (Clients Actifs Fin d'Année)</h2>
+            <div id="park-summary" class="space-y-6 grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <!-- Park Tables will be inserted here by JS -->
             </div>
         </div>
     </div>
@@ -128,11 +133,11 @@
         let data = {
             // Variables Globales
             volumes: {
-                iPhones: 161968,
-                MacBook: 56096,
-                AirPods: 127946,
-                iPads: 50000, // Défaut
-                'Apple Watch': 30000 // Défaut
+                iPhones: 13497,
+                MacBook: 4674,
+                AirPods: 10662,
+                iPads: 4166, 
+                'Apple Watch': 2500 
             },
             // Variables Spécifiques aux Offres
             offers: {
@@ -154,13 +159,13 @@
                             renunciation_rate: 0.19,
                             churn_monthly: 0.04, // Taux de churn dès M13
                             max_duration_months: 48, // Durée de vie maximale (4 ans)
-                            commitment_months: 12, // Non variable
+                            commitment_months: 12, // Engagement 12 mois (implique revenu dès M13)
                         },
                         prepaid_12m: {
-                            price_ttc: 199.99, // Exemple
+                            price_ttc: 199.99, 
                             margin_rate: 0.29,
-                            attachment_rate: 0.05, // Défaut
-                            duration_months: 12, // Non variable
+                            attachment_rate: 0.05, 
+                            duration_months: 12, // Durée de l'offre
                         }
                     },
                     MacBook: {
@@ -171,7 +176,7 @@
                             renunciation_rate: 0.17,
                             churn_monthly: 0.04,
                             max_duration_months: 48,
-                            commitment_months: 12, // Non variable
+                            commitment_months: 12, 
                         },
                         prepaid_12m: {
                             price_ttc: 199.99,
@@ -238,19 +243,19 @@
                     },
                     iPhones: {
                         monthly: {
-                            price_ttc: 12.99, // Exemple
+                            price_ttc: 12.99, 
                             margin_rate: 0.29,
                             attachment_rate: 0.23,
                             renunciation_rate: 0.19,
                             churn_monthly: 0.04, // Taux de churn dès M13
                             max_duration_months: 48,
-                            commitment_months: 12, // Exemple
+                            commitment_months: 0, // Mis à 0 pour "Sans engagement" (Revenu dès M1)
                         },
                         prepaid_24m: {
-                            price_ttc: 249.99, // Exemple
+                            price_ttc: 249.99, 
                             margin_rate: 0.29,
                             attachment_rate: 0.05,
-                            duration_months: 24, // Non variable
+                            duration_months: 24, // Durée de l'offre
                         }
                     },
                     MacBook: {
@@ -261,10 +266,10 @@
                             duration_months: 12,
                         },
                         prepaid_36m: {
-                            price_ttc: 499.99, // Exemple
+                            price_ttc: 499.99, 
                             margin_rate: 0.42,
                             attachment_rate: 0.03,
-                            duration_months: 36, // Non variable
+                            duration_months: 36, 
                         }
                     },
                     AirPods: {
@@ -277,16 +282,16 @@
                     },
                     iPads: {
                         monthly: {
-                            price_ttc: 7.99, // Exemple
+                            price_ttc: 7.99, 
                             margin_rate: 0.305,
                             attachment_rate: 0.08,
                             renunciation_rate: 0.08,
                             churn_monthly: 0.04,
                             max_duration_months: 48,
-                            commitment_months: 12, // Exemple
+                            commitment_months: 0, // Mis à 0 pour "Sans engagement"
                         },
                         prepaid_24m: {
-                            price_ttc: 149.99, // Exemple
+                            price_ttc: 149.99, 
                             margin_rate: 0.305,
                             attachment_rate: 0.02,
                             duration_months: 24,
@@ -294,16 +299,16 @@
                     },
                     'Apple Watch': {
                         monthly: {
-                            price_ttc: 3.99, // Exemple
+                            price_ttc: 3.99, 
                             margin_rate: 0.305,
                             attachment_rate: 0.09,
                             renunciation_rate: 0.08,
                             churn_monthly: 0.04,
                             max_duration_months: 48,
-                            commitment_months: 12, // Exemple
+                            commitment_months: 0, // Mis à 0 pour "Sans engagement"
                         },
                         prepaid_24m: {
-                            price_ttc: 89.99, // Exemple
+                            price_ttc: 89.99, 
                             margin_rate: 0.305,
                             attachment_rate: 0.01,
                             duration_months: 24,
@@ -414,16 +419,23 @@
             Object.entries(productData).forEach(([offerKey, offerDetails]) => {
                 const isMonthly = offerKey.includes('monthly');
                 const duration = offerDetails.duration_months || offerDetails.commitment_months || 0;
-                let title = isMonthly
-                    ? `Abonnement Mensuel (${duration} M)`
-                    : `Offre Prépayée (${duration} M)`;
+                let title;
                 
-                // Correction pour l'affichage des MacBook AP
-                if (offerType === 'AP' && product === 'MacBook') {
-                    if(offerKey.includes('12m')) title = 'Offre Prépayée (12 M)';
-                    if(offerKey.includes('36m')) title = 'Offre Prépayée (36 M)';
+                // Mettre à jour le titre pour la proposition AP Mensuel (Sans engagement)
+                if (offerType === 'AP' && isMonthly) {
+                    title = 'Abonnement Mensuel (Sans engagement)';
+                } else if (isMonthly) {
+                    title = `Abonnement Mensuel (${duration} M)`;
+                } else {
+                    // Logique pour les prépayés
+                    if (offerType === 'AP' && product === 'MacBook') {
+                        if(offerKey.includes('12m')) title = 'Offre Prépayée (12 M)';
+                        else if(offerKey.includes('36m')) title = 'Offre Prépayée (36 M)';
+                        else title = `Offre Prépayée (${duration} M)`; // Fallback
+                    } else {
+                        title = `Offre Prépayée (${duration} M)`;
+                    }
                 }
-
 
                 html += `
                     <div class="${isMonthly ? 'monthly-card' : 'prepaid-card'} p-3 rounded-lg bg-gray-50 shadow-inner">
@@ -516,7 +528,7 @@
                                     ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].monthly.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-prepaid font-semibold">Total Prépayés</td>
+                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-prepaid font-semibold">Total Offres Prépayées</td>
                                     ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].prepaid.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
                                 </tr>
                                 ${offerType === 'AS' ? `
@@ -539,6 +551,51 @@
                     <div class="mt-4 p-3 ${bgColorClass} rounded-lg">
                         <p class="text-lg font-bold ${colorClass}">Total sur 4 Ans : ${results.total_4_years.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</p>
                     </div>
+                </div>
+            `;
+            return html;
+        };
+
+        // Rendre le tableau de synthèse du Parc Client
+        const renderParkSummary = (offerType, parkResults) => {
+            const offerName = offerType === 'AS' ? 'PROPOSITION 1 (AS)' : 'PROPOSITION 2 (AP)';
+            const colorClass = offerType === 'AS' ? 'text-blue-700' : 'text-green-700';
+            const borderColor = offerType === 'AS' ? 'border-blue-500' : 'border-green-500';
+            const bgColorClass = offerType === 'AS' ? 'bg-blue-50' : 'bg-green-50';
+
+            const formatNumber = (num) => Math.round(num).toLocaleString('fr-FR');
+
+            let html = `
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-8 ${borderColor}">
+                    <h3 class="text-xl font-bold mb-4 ${colorClass}">${offerName} - Parc Client</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="${bgColorClass}">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type d'Offre</th>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Fin Année ${i + 1}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-monthly font-semibold">Abonnement Mensuel (Park)</td>
+                                    ${parkResults.monthly.map(park => `<td class="result-cell px-3 py-2 text-sm">${formatNumber(park)}</td>`).join('')}
+                                </tr>
+                                <tr>
+                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-prepaid font-semibold">Offre Prépayée (Park)</td>
+                                    ${parkResults.prepaid.map(park => `<td class="result-cell px-3 py-2 text-sm">${formatNumber(park)}</td>`).join('')}
+                                </tr>
+                                <tr class="border-t-2 border-gray-400 font-extrabold">
+                                    <td class="px-3 py-2 whitespace-nowrap text-base ${colorClass}">TOTAL CLIENTS ACTIFS</td>
+                                    ${parkResults.monthly.map((m, i) => {
+                                        const total = m + parkResults.prepaid[i];
+                                        return `<td class="result-cell px-3 py-2 text-base ${colorClass}">${formatNumber(total)}</td>`;
+                                    }).join('')}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 p-2 rounded bg-gray-50">Note: Le nombre de clients actifs est calculé à la fin du mois M12, M24, M36 et M48, en tenant compte de la durée de vie du contrat et du churn.</p>
                 </div>
             `;
             return html;
@@ -582,6 +639,12 @@
 
         const calculateProjections = () => {
             const results = { AS: [], AP: [] };
+            
+            // Park Snapshots [Y1, Y2, Y3, Y4] for end of M12, M24, M36, M48
+            const parkSnapshots = {
+                AS: { monthly: [0, 0, 0, 0], prepaid: [0, 0, 0, 0] },
+                AP: { monthly: [0, 0, 0, 0], prepaid: [0, 0, 0, 0] }
+            };
 
             // Initialiser les résultats annuels
             for (let i = 0; i < NB_YEARS; i++) {
@@ -591,7 +654,7 @@
 
             const productKeys = Object.keys(data.volumes);
 
-            // Boucle sur les 48 mois (M0 à M47)
+            // Boucle sur les 48 mois (m = 0 à M47)
             for (let m = 0; m < TOTAL_MONTHS; m++) {
                 const yearIndex = Math.floor(m / MONTHS_PER_YEAR); // 0, 1, 2, 3
                 const monthInYear = m % MONTHS_PER_YEAR; // 0 à 11
@@ -669,27 +732,27 @@
                                 const renunciationRate = offerDetails.renunciation_rate;
                                 const churnRate = offerDetails.churn_monthly;
                                 const maxDuration = offerDetails.max_duration_months;
-                                let activePark = salesVolume; // Parc initial
+                                let activeParkInitial = salesVolume; // Parc initial après la vente
 
-                                // Boucle sur les mois suivants la vente (m+1 à TOTAL_MONTHS-1)
+                                // Boucle sur les mois suivants la vente (m+1 à TOTAL_MONTHS-1) pour la marge
                                 for (let k = m + 1; k < TOTAL_MONTHS; k++) {
                                     const parkYearIndex = Math.floor(k / MONTHS_PER_YEAR);
+                                    let activePark = activeParkInitial;
 
-                                    // 1. Durée de vie maximale : Si le mois de vie du contrat dépasse la durée max, le parc tombe à zéro
+                                    // 1. Durée de vie maximale : Si le mois de vie du contrat dépasse la durée max
                                     if (k >= m + maxDuration) {
                                         activePark = 0;
-                                        break;
-                                    }
+                                    } else {
+                                        // 2. Décroissance du parc liée à la renonciation (M1)
+                                        if (k === m + 1) { 
+                                            activePark *= (1 - renunciationRate);
+                                        }
 
-                                    // 2. Décroissance du parc liée à la renonciation (après M0, si pas déjà appliqué)
-                                    if (k === m + 1) { // M+1 (M1)
-                                        // La renonciation initiale réduit le parc pour les calculs de marge mensuelle et churn
-                                        activePark = salesVolume * (1 - renunciationRate);
-                                    }
-
-                                    // 3. Décroissance du parc liée au Churn (dès M13)
-                                    if (k >= m + 13) {
-                                        activePark *= (1 - churnRate);
+                                        // 3. Décroissance du parc liée au Churn (dès M13)
+                                        if (k >= m + 13) {
+                                            const churnMonths = k - (m + 12);
+                                            activePark *= Math.pow((1 - churnRate), churnMonths);
+                                        }
                                     }
 
                                     // Application de la Marge Mensuelle
@@ -700,12 +763,60 @@
                                                 results.AS[parkYearIndex].monthly += activePark * unitMargin;
                                             }
                                         } else if (offerType === 'AP') {
-                                            // AP: Revenu à partir de M1
+                                            // AP: Revenu à partir de M1 (Sans engagement)
                                             results.AP[parkYearIndex].monthly += activePark * unitMargin;
                                         }
                                     }
                                 }
                             }
+
+                            // --------------------------------------------------------
+                            // C. Suivi du Parc Client (Snapshots Fin d'Année)
+                            // --------------------------------------------------------
+                            
+                            // Check contribution to park snapshots Y1, Y2, Y3, Y4
+                            [1, 2, 3, 4].forEach(year => {
+                                const endMonth = year * 12; // M12, M24, M36, M48
+                                if (m < endMonth) {
+                                    const monthInContract = endMonth - m;
+
+                                    if (isMonthly) {
+                                        const renunciationRate = offerDetails.renunciation_rate;
+                                        const churnRate = offerDetails.churn_monthly;
+                                        const maxDuration = offerDetails.max_duration_months;
+
+                                        let park = salesVolume;
+
+                                        if (monthInContract >= maxDuration) {
+                                            park = 0;
+                                        } else {
+                                            // Renonciation (M1)
+                                            if (monthInContract >= 1) {
+                                                park *= (1 - renunciationRate); 
+                                            }
+
+                                            // Churn (dès M13)
+                                            const churnMonths = Math.max(0, monthInContract - 12);
+                                            if (churnMonths > 0) {
+                                                park *= Math.pow((1 - churnRate), churnMonths);
+                                            }
+                                        }
+
+                                        // FIX: Correction de l'indexation. Utiliser .monthly[year - 1] au lieu de [year - 1].monthly
+                                        parkSnapshots[offerType].monthly[year - 1] += park;
+
+                                    } else if (isPrepaid) {
+                                        const duration = offerDetails.duration_months;
+
+                                        // Prepaid is active if contract age < duration
+                                        if (monthInContract <= duration) {
+                                            // FIX: Correction de l'indexation. Utiliser .prepaid[year - 1] au lieu de [year - 1].prepaid
+                                            parkSnapshots[offerType].prepaid[year - 1] += salesVolume;
+                                        }
+                                    }
+                                }
+                            });
+
                         });
                     });
                 });
@@ -731,6 +842,11 @@
             document.getElementById('results-summary').innerHTML =
                 renderResultsSummary('AS', results.AS) +
                 renderResultsSummary('AP', results.AP);
+
+            // Affichage du parc client
+            document.getElementById('park-summary').innerHTML =
+                renderParkSummary('AS', parkSnapshots.AS) +
+                renderParkSummary('AP', parkSnapshots.AP);
         };
 
         // Fonction d'initialisation
