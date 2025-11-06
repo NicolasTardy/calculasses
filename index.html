@@ -106,6 +106,18 @@
             <div id="product-inputs" class="tab-content">
                 <!-- Product Input Cards will be inserted here by JS (depending on active tab) -->
             </div>
+
+            <!-- Nouveaux boutons d'action pour Sauvegarde et Enregistrement -->
+            <div id="action-buttons" class="flex space-x-4 pt-4 border-t border-gray-200">
+                <button onclick="downloadUrlState()" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-150 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    Enregistrer l'URL (Texte)
+                </button>
+                <button onclick="downloadCSV()" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-150 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Sauvegarder les Données (CSV)
+                </button>
+            </div>
         </div>
 
         <!-- Section 3 & 4: Synthèse des Projections et Parc Client -->
@@ -317,6 +329,9 @@
                 }
             }
         };
+
+        // Variable globale pour stocker les résultats calculés pour l'export CSV
+        let computedResults = {};
 
         let activeOfferTab = 'AS'; // Track the currently active tab
         const JSON_STATE_KEY = 'v'; // Key for the state data in the URL hash
@@ -683,16 +698,197 @@
                     const loadedData = JSON.parse(jsonString);
                     
                     // Remplacer les données par défaut par les données chargées
-                    // S'assurer que les valeurs de taux restent des nombres pour éviter les erreurs de calcul
                     Object.assign(data.volumes, loadedData.volumes);
-                    Object.assign(data.offers, loadedData.offers);
+                    // Utiliser une fusion profonde pour s'assurer que les structures complexes sont conservées
+                    const deepMerge = (target, source) => {
+                        for (const key of Object.keys(source)) {
+                            if (source[key] instanceof Object && !Array.isArray(source[key])) {
+                                if (!target[key]) Object.assign(target, { [key]: {} });
+                                deepMerge(target[key], source[key]);
+                            } else {
+                                target[key] = source[key];
+                            }
+                        }
+                    };
+                    deepMerge(data.offers, loadedData.offers);
                     
-                    // La fonction init va s'assurer que l'interface est mise à jour avec ces nouvelles valeurs
                     console.log("État chargé depuis l'URL.");
                 }
             } catch (error) {
                 console.warn("Impossible de charger l'état depuis l'URL. Utilisation des valeurs par défaut.", error);
             }
+        };
+
+        // --- Fonctions de téléchargement (Nouveaux Ajouts) ---
+
+        /**
+         * Télécharge un fichier texte contenant l'URL actuelle avec l'état.
+         */
+        const downloadUrlState = () => {
+            // S'assurer que l'état le plus récent est dans l'URL avant de la récupérer
+            saveStateToUrl();
+            const currentUrl = window.location.href;
+            
+            const blob = new Blob([currentUrl], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `comparateur_revenus_url_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.txt`;
+            
+            // Simuler un clic pour le téléchargement
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        /**
+         * Télécharge un fichier CSV contenant l'ensemble des données d'entrée et de sortie.
+         */
+        const downloadCSV = () => {
+            const separator = ';';
+            // Nouveau format: Section;Catégorie;Produit;Offre;Détail;A1;A2;A3;A4;Total 4 Ans;Unité
+            let csv = "Section;Catégorie;Produit;Offre;Détail;Valeur A1;Valeur A2;Valeur A3;Valeur A4;Total 4 Ans;Unité\n";
+            
+            // Helper pour formater les valeurs
+            const formatValue = (value, isRate = false, isInt = false) => {
+                let displayValue = value;
+                
+                if (isRate) {
+                    displayValue = (value * 100);
+                }
+                
+                // Formater la valeur avec 0 ou 2 décimales et utiliser la virgule comme séparateur décimal (français)
+                const fixedDecimals = isInt ? 0 : 2;
+                return parseFloat(displayValue).toFixed(fixedDecimals).replace('.', ',');
+            };
+
+            // ----------------------------------------------------------------------------------
+            // SECTION 1: INPUTS (Variables Communes)
+            // ----------------------------------------------------------------------------------
+            csv += `\nINPUTS${separator}Variables Communes${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}\n`;
+
+            // Taux Fiscal
+            const taxRate = data.offers.AS.global.tax_rate;
+            csv += `INPUTS${separator}Global${separator}Taux Fiscal TTC vers HT${separator}${separator}Taux Fiscal${separator}${formatValue(taxRate, true)}%${separator}${separator}${separator}${separator}${separator}%\n`;
+            
+            // Volumes Communs
+            Object.keys(data.volumes).forEach(product => {
+                csv += `INPUTS${separator}Global${separator}${product}${separator}Volume Mensuel${separator}Volume${separator}${formatValue(data.volumes[product], false, true)}${separator}${separator}${separator}${separator}${separator}Unités\n`;
+            });
+
+            // Profit Sharing (AS)
+            csv += `INPUTS${separator}PROPOSITION AS${separator}Profit Sharing Annuel${separator}${separator}Montant HT${separator}${formatValue(data.offers.AS.global.profitSharing_A1)}${separator}${formatValue(data.offers.AS.global.profitSharing_A2)}${separator}${formatValue(data.offers.AS.global.profitSharing_A3)}${separator}${formatValue(data.offers.AS.global.profitSharing_A4)}${separator}${separator}€ HT\n`;
+
+            // ----------------------------------------------------------------------------------
+            // SECTION 2: INPUTS (Variables Offres)
+            // ----------------------------------------------------------------------------------
+            ['AS', 'AP'].forEach(offerType => {
+                csv += `\nINPUTS${separator}Offre ${offerType}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}\n`;
+                
+                // Inputs X-Force (AS only)
+                if (offerType === 'AS') {
+                    const xforceRate = data.offers.AS.global.xforce_rate;
+                    const xforceRev = data.offers.AS.global.xforce_revenue;
+                    csv += `INPUTS${separator}PROPOSITION AS${separator}iPhones${separator}X-Force${separator}Taux de Pose${separator}${formatValue(xforceRate, true)}%${separator}${separator}${separator}${separator}${separator}%\n`;
+                    csv += `INPUTS${separator}PROPOSITION AS${separator}iPhones${separator}X-Force${separator}Revenu Unitaire TTC${separator}${formatValue(xforceRev)}${separator}${separator}${separator}${separator}${separator}€ TTC\n`;
+                }
+
+                Object.keys(data.volumes).forEach(product => {
+                    const productData = data.offers[offerType][product];
+                    if (!productData) return;
+
+                    Object.entries(productData).forEach(([offerKey, offerDetails]) => {
+                        const offerLabel = offerKey.includes('monthly') ? 'Mensuel' : 'Prépayé';
+                        
+                        Object.entries(offerDetails).forEach(([key, value]) => {
+                            let label = key.replace('_', ' ');
+                            let unit = '';
+                            let isRate = key.includes('rate') || key.includes('churn');
+                            let isInt = key.includes('duration') || key.includes('commitment') || key.includes('max_duration');
+
+                            if (key.includes('price')) unit = ' € TTC';
+                            else if (isInt) unit = ' M';
+
+                            // Format: Section;Catégorie;Produit;Offre;Détail;Valeur A1 (col 5)
+                            csv += `INPUTS${separator}PROPOSITION ${offerType}${separator}${product}${separator}${offerLabel} (${offerKey})${separator}${label}${separator}${formatValue(value, isRate, isInt)}${unit}${separator}${separator}${separator}${separator}${separator}\n`;
+                        });
+                    });
+                });
+            });
+
+
+            // ----------------------------------------------------------------------------------
+            // SECTION 3: OUTPUTS (Synthèse Financière - Gains)
+            // ----------------------------------------------------------------------------------
+            csv += `\nOUTPUTS${separator}Synthèse Financière (Gains HT)${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}\n`;
+
+            ['AS', 'AP'].forEach(offerType => {
+                const results = computedResults[offerType].annual;
+                const total4Years = computedResults[offerType].total_4_years;
+                
+                const y1_total = formatValue(results[0].total);
+                const y2_total = formatValue(results[1].total);
+                const y3_total = formatValue(results[2].total);
+                const y4_total = formatValue(results[3].total);
+                const total_4_years_formatted = formatValue(total4Years);
+
+                csv += `OUTPUTS${separator}PROPOSITION ${offerType}${separator}TOTAL ANNUEL HT${separator}${separator}${separator}${y1_total}${separator}${y2_total}${separator}${y3_total}${separator}${y4_total}${separator}${total_4_years_formatted}${separator}€ HT\n`;
+
+                // Détail des revenus
+                const categories = {
+                    monthly: 'Précompte / Marge Mensuelle',
+                    prepaid: 'Offres Prépayées',
+                };
+                
+                if (offerType === 'AS') {
+                    categories.xforce = 'Revenus X-Force (iPhones)';
+                    categories.profitSharing = 'Profit Sharing (Annuel)';
+                }
+
+                Object.entries(categories).forEach(([key, label]) => {
+                    const y1 = results[0][key];
+                    const y2 = results[1][key];
+                    const y3 = results[2][key];
+                    const y4 = results[3][key];
+                    
+                    // Calculer le total sur 4 ans pour chaque catégorie
+                    const categoryTotal = y1 + y2 + y3 + y4;
+
+                    csv += `OUTPUTS${separator}PROPOSITION ${offerType}${separator}Détail: ${label}${separator}${separator}${separator}${formatValue(y1)}${separator}${formatValue(y2)}${separator}${formatValue(y3)}${separator}${formatValue(y4)}${separator}${formatValue(categoryTotal)}${separator}€ HT\n`;
+                });
+            });
+
+
+            // ----------------------------------------------------------------------------------
+            // SECTION 4: OUTPUTS (Parc Client - Clients Actifs Fin d'Année)
+            // ----------------------------------------------------------------------------------
+            csv += `\nOUTPUTS${separator}Parc Client (Clients Actifs Fin d'Année)${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${separator}\n`;
+            
+            ['AS', 'AP'].forEach(offerType => {
+                const park = computedResults.park[offerType];
+                const isInt = true;
+
+                // Total Parc
+                const y1_total = park.monthly[0] + park.prepaid[0];
+                const y2_total = park.monthly[1] + park.prepaid[1];
+                const y3_total = park.monthly[2] + park.prepaid[2];
+                const y4_total = park.monthly[3] + park.prepaid[3];
+
+                csv += `OUTPUTS${separator}PROPOSITION ${offerType}${separator}TOTAL CLIENTS ACTIFS${separator}${separator}${separator}${formatValue(y1_total, false, isInt)}${separator}${formatValue(y2_total, false, isInt)}${separator}${formatValue(y3_total, false, isInt)}${separator}${formatValue(y4_total, false, isInt)}${separator}${separator}Clients\n`;
+
+                // Détail du Parc
+                csv += `OUTPUTS${separator}PROPOSITION ${offerType}${separator}Détail: Abonnement Mensuel${separator}${separator}${separator}${formatValue(park.monthly[0], false, isInt)}${separator}${formatValue(park.monthly[1], false, isInt)}${separator}${formatValue(park.monthly[2], false, isInt)}${separator}${formatValue(park.monthly[3], false, isInt)}${separator}${separator}Clients\n`;
+                csv += `OUTPUTS${separator}PROPOSITION ${offerType}${separator}Détail: Offre Prépayée${separator}${separator}${separator}${formatValue(park.prepaid[0], false, isInt)}${separator}${formatValue(park.prepaid[1], false, isInt)}${separator}${formatValue(park.prepaid[2], false, isInt)}${separator}${formatValue(park.prepaid[3], false, isInt)}${separator}${separator}Clients\n`;
+            });
+            
+            // Final download logic: Ajout du BOM pour l'encodage UTF-8 (compatible Excel)
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `comparateur_revenus_donnees_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         };
 
         // --- Fonction de calcul principal ---
@@ -896,7 +1092,16 @@
                     total4Years += year.total;
                 });
                 results[offerType].total_4_years = total4Years;
+
+                // --- Sauvegarde des résultats dans la variable globale pour l'export CSV ---
+                computedResults[offerType] = {
+                    annual: results[offerType].map(r => ({ ...r })),
+                    total_4_years: total4Years
+                };
             });
+            
+            // --- Sauvegarde des résultats du parc client ---
+            computedResults.park = parkSnapshots;
 
             // Affichage des résultats
             document.getElementById('results-summary').innerHTML =
