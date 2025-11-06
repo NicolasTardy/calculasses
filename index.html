@@ -319,17 +319,24 @@
         };
 
         let activeOfferTab = 'AS'; // Track the currently active tab
+        const JSON_STATE_KEY = 'v'; // Key for the state data in the URL hash
 
-        // Fonction utilitaire pour lire la valeur d'un input, convertie en nombre
+        /**
+         * Fonction utilitaire pour lire la valeur d'un input, convertie en nombre
+         * @param {string} id - L'ID de l'élément input.
+         * @param {boolean} isRate - Indique si c'est un taux (%) qui doit être divisé par 100.
+         * @param {boolean} isInt - Indique si la valeur doit être un entier.
+         * @returns {number} La valeur numérique de l'input ou 0 si invalide.
+         */
         const getInputValue = (id, isRate = false, isInt = false) => {
             const el = document.getElementById(id);
             if (!el) return 0;
+            // Nettoyer la valeur de l'input et remplacer la virgule par un point pour la conversion
             let val = el.value.replace(/[^0-9,.-]/g, '').replace(',', '.');
             let num = parseFloat(val);
             if (isNaN(num)) return 0;
 
             if (isRate) {
-                // Si c'est un taux (%), on divise par 100
                 return num / 100;
             }
             if (isInt) {
@@ -358,19 +365,25 @@
         // Rendre les inputs de volume global (commun)
         const renderGlobalVolumes = () => {
             const container = document.getElementById('global-volumes');
+            // Utiliser la fonction de mise à jour pour s'assurer que l'attribut oninput déclenche la sauvegarde
+            const onInputCode = "updateData('AS', 'global', 'tax_rate', true); updateData('AP', 'global', 'tax_rate', true); calculateProjections(); saveStateToUrl();";
+            
             container.innerHTML = `
                 <div class="input-group col-span-5 mb-4 p-2 bg-gray-50 rounded-lg border-none">
                     <label class="font-bold text-gray-700">Taux Fiscal (TTC vers HT)</label>
-                    <input type="number" step="0.01" min="0" id="global-tax-rate" value="${(data.offers.AS.global.tax_rate * 100).toFixed(2)}" oninput="updateData('AS', 'global', 'tax_rate', true); updateData('AP', 'global', 'tax_rate', true); calculateProjections();" class="text-right w-full font-bold bg-white" />
+                    <input type="number" step="0.01" min="0" id="global-tax-rate" value="${(data.offers.AS.global.tax_rate * 100).toFixed(2)}" oninput="${onInputCode}" class="text-right w-full font-bold bg-white" />
                     <span class="text-right text-gray-500 ml-1">%</span>
                 </div>
             `;
             Object.keys(data.volumes).forEach(product => {
+                const safeProduct = product.replace(' ', '');
+                const onInputVolumeCode = `updateVolume('${product}', this.value); calculateProjections(); saveStateToUrl();`;
+
                 container.innerHTML += `
                     <div class="input-group flex-col items-start p-2 bg-gray-50 rounded-lg border-none">
-                        <label for="volume-${product.replace(' ', '')}" class="font-semibold text-gray-800">${product}</label>
-                        <input type="number" step="1" min="0" id="volume-${product.replace(' ', '')}" value="${data.volumes[product]}"
-                               oninput="updateVolume('${product}', this.value); calculateProjections();" class="text-right w-full" />
+                        <label for="volume-${safeProduct}" class="font-semibold text-gray-800">${product}</label>
+                        <input type="number" step="1" min="0" id="volume-${safeProduct}" value="${data.volumes[product]}"
+                               oninput="${onInputVolumeCode}" class="text-right w-full" />
                         <span class="text-xs text-gray-500 mt-1">Volumes vendus / mois</span>
                     </div>
                 `;
@@ -394,12 +407,14 @@
             const displayVal = isRate ? (currentVal * 100).toFixed(2) : currentVal.toFixed(isInt ? 0 : 2);
             const inputId = `${offerType}-${product.replace(' ', '')}-${offerKey}-${dataKey}`;
             const step = isRate ? '0.01' : (isInt ? '1' : '0.01');
+            
+            const onInputChangeCode = `updateData('${offerType}', '${product}', '${offerKey}', '${dataKey}', ${isRate}, ${isInt}, this.value); calculateProjections(); saveStateToUrl();`;
 
             return `
                 <div class="input-group">
                     <label for="${inputId}" title="${label}">${label}</label>
                     <input type="number" step="${step}" min="0" id="${inputId}" value="${displayVal}"
-                           oninput="updateData('${offerType}', '${product}', '${offerKey}', '${dataKey}', ${isRate}, ${isInt}, this.value); calculateProjections();">
+                           oninput="${onInputChangeCode}">
                     <span class="ml-1 text-xs text-gray-400 w-4">${unit === '%' ? '%' : (unit === '€' ? '€' : '')}</span>
                 </div>
             `;
@@ -518,38 +533,38 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="${bgColorClass}">
                                 <tr>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenu</th>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Année ${i + 1}</th>`).join('')}
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenu</th>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<th class="px-2 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">A${i + 1}</th>`).join('')}
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr>
-                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-monthly font-semibold">Total Précompte / Marge Mensuelle</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].monthly.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                    <td class="px-2 py-1 whitespace-nowrap text-xs text-monthly font-semibold">Total Précompte / Marge Mensuelle</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${results[i].monthly.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-prepaid font-semibold">Total Offres Prépayées</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].prepaid.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                    <td class="px-2 py-1 whitespace-nowrap text-xs text-prepaid font-semibold">Total Offres Prépayées</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${results[i].prepaid.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
                                 </tr>
                                 ${offerType === 'AS' ? `
                                 <tr>
-                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-xforce font-semibold">Total Revenus X-Force (iPhones)</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].xforce.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                    <td class="px-2 py-1 whitespace-nowrap text-xs text-xforce font-semibold">Total Revenus X-Force (iPhones)</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${results[i].xforce.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-profit font-semibold">Profit Sharing (Annuel)</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].profitSharing.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                    <td class="px-2 py-1 whitespace-nowrap text-xs text-profit font-semibold">Profit Sharing (Annuel)</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${results[i].profitSharing.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
                                 </tr>
                                 ` : ''}
                                 <tr class="border-t-2 border-gray-400 font-extrabold">
-                                    <td class="px-3 py-2 whitespace-nowrap text-base ${colorClass}">TOTAL ANNUEL</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-base ${colorClass}">${results[i].total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                    <td class="px-2 py-1 whitespace-nowrap text-sm ${colorClass}">TOTAL ANNUEL</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-sm ${colorClass}">${results[i].total.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="mt-4 p-3 ${bgColorClass} rounded-lg">
-                        <p class="text-lg font-bold ${colorClass}">Total sur 4 Ans : ${results.total_4_years.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</p>
+                        <p class="text-sm font-bold ${colorClass}">Total sur 4 Ans : ${results.total_4_years.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</p>
                     </div>
                 </div>
             `;
@@ -563,7 +578,8 @@
             const borderColor = offerType === 'AS' ? 'border-blue-500' : 'border-green-500';
             const bgColorClass = offerType === 'AS' ? 'bg-blue-50' : 'bg-green-50';
 
-            const formatNumber = (num) => Math.round(num).toLocaleString('fr-FR');
+            // Utilisation d'un format sans décimales pour les clients (nombre entier)
+            const formatNumber = (num) => Math.round(num).toLocaleString('fr-FR', { minimumFractionDigits: 0 });
 
             let html = `
                 <div class="bg-white p-6 rounded-xl shadow-lg border-t-8 ${borderColor}">
@@ -572,24 +588,24 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="${bgColorClass}">
                                 <tr>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type d'Offre</th>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Fin Année ${i + 1}</th>`).join('')}
+                                    <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type d'Offre</th>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<th class="px-2 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Fin A${i + 1}</th>`).join('')}
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr>
-                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-monthly font-semibold">Abonnement Mensuel (Park)</td>
-                                    ${parkResults.monthly.map(park => `<td class="result-cell px-3 py-2 text-sm">${formatNumber(park)}</td>`).join('')}
+                                    <td class="px-2 py-1 whitespace-nowrap text-xs text-monthly font-semibold">Abonnement Mensuel (Park)</td>
+                                    ${parkResults.monthly.map(park => `<td class="result-cell px-2 py-1 text-xs">${formatNumber(park)}</td>`).join('')}
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-prepaid font-semibold">Offre Prépayée (Park)</td>
-                                    ${parkResults.prepaid.map(park => `<td class="result-cell px-3 py-2 text-sm">${formatNumber(park)}</td>`).join('')}
+                                    <td class="px-2 py-1 whitespace-nowrap text-xs text-prepaid font-semibold">Offre Prépayée (Park)</td>
+                                    ${parkResults.prepaid.map(park => `<td class="result-cell px-2 py-1 text-xs">${formatNumber(park)}</td>`).join('')}
                                 </tr>
                                 <tr class="border-t-2 border-gray-400 font-extrabold">
-                                    <td class="px-3 py-2 whitespace-nowrap text-base ${colorClass}">TOTAL CLIENTS ACTIFS</td>
+                                    <td class="px-2 py-1 whitespace-nowrap text-sm ${colorClass}">TOTAL CLIENTS ACTIFS</td>
                                     ${parkResults.monthly.map((m, i) => {
                                         const total = m + parkResults.prepaid[i];
-                                        return `<td class="result-cell px-3 py-2 text-base ${colorClass}">${formatNumber(total)}</td>`;
+                                        return `<td class="result-cell px-2 py-1 text-sm ${colorClass}">${formatNumber(total)}</td>`;
                                     }).join('')}
                                 </tr>
                             </tbody>
@@ -634,6 +650,50 @@
             }
         };
 
+        // --- Fonctions de gestion de l'état (URL) ---
+
+        /**
+         * Sauvegarde l'état actuel de 'data' dans le hash de l'URL.
+         */
+        const saveStateToUrl = () => {
+            try {
+                // Encode la structure de données 'data' en JSON et compresse-la avec base64
+                // pour garder l'URL plus courte et valide
+                const jsonString = JSON.stringify(data);
+                const encodedState = btoa(jsonString); // Base64 encoding
+                window.location.hash = `${JSON_STATE_KEY}=${encodedState}`;
+            } catch (error) {
+                console.error("Erreur lors de la sauvegarde de l'état dans l'URL:", error);
+            }
+        };
+
+        /**
+         * Charge l'état depuis le hash de l'URL au démarrage de la page.
+         */
+        const loadStateFromUrl = () => {
+            const hash = window.location.hash.substring(1);
+            if (!hash) return;
+
+            try {
+                const urlParams = new URLSearchParams(hash);
+                const encodedState = urlParams.get(JSON_STATE_KEY);
+                
+                if (encodedState) {
+                    const jsonString = atob(encodedState); // Decode Base64
+                    const loadedData = JSON.parse(jsonString);
+                    
+                    // Remplacer les données par défaut par les données chargées
+                    // S'assurer que les valeurs de taux restent des nombres pour éviter les erreurs de calcul
+                    Object.assign(data.volumes, loadedData.volumes);
+                    Object.assign(data.offers, loadedData.offers);
+                    
+                    // La fonction init va s'assurer que l'interface est mise à jour avec ces nouvelles valeurs
+                    console.log("État chargé depuis l'URL.");
+                }
+            } catch (error) {
+                console.warn("Impossible de charger l'état depuis l'URL. Utilisation des valeurs par défaut.", error);
+            }
+        };
 
         // --- Fonction de calcul principal ---
 
@@ -802,7 +862,7 @@
                                             }
                                         }
 
-                                        // FIX: Correction de l'indexation. Utiliser .monthly[year - 1] au lieu de [year - 1].monthly
+                                        // Mise à jour du parc mensuel
                                         parkSnapshots[offerType].monthly[year - 1] += park;
 
                                     } else if (isPrepaid) {
@@ -810,7 +870,7 @@
 
                                         // Prepaid is active if contract age < duration
                                         if (monthInContract <= duration) {
-                                            // FIX: Correction de l'indexation. Utiliser .prepaid[year - 1] au lieu de [year - 1].prepaid
+                                            // Mise à jour du parc prépayé
                                             parkSnapshots[offerType].prepaid[year - 1] += salesVolume;
                                         }
                                     }
@@ -851,18 +911,23 @@
 
         // Fonction d'initialisation
         const init = () => {
-            // S'assurer que les valeurs numériques initiales sont des nombres
+            // 1. Charger l'état depuis l'URL (écrase les valeurs par défaut si présent)
+            loadStateFromUrl();
+            
+            // 2. S'assurer que les valeurs numériques initiales sont des nombres
             Object.keys(data.volumes).forEach(product => {
                 data.volumes[product] = parseInt(data.volumes[product]);
             });
 
-            // Rendre l'interface
+            // 3. Rendre l'interface avec les données chargées
             renderGlobalVolumes();
-            // Lancer le rendu initial avec l'onglet AS
             renderProductInputs();
 
-            // Lancer le premier calcul
+            // 4. Lancer le premier calcul
             calculateProjections();
+            
+            // 5. Sauvegarder l'état initial (utile si l'utilisateur change les valeurs par défaut sans interagir avec tous les inputs)
+            saveStateToUrl();
         };
 
         // Lancer l'initialisation
