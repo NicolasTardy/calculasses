@@ -3,1022 +3,755 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projection de Rentabilité des Offres d'Assurance</title>
+    <title>Comparateur de Projections de Revenus Assurances</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7f7f7;
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        
+        /* Styles pour les inputs */
+        .input-group { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 8px; 
+            padding: 4px 0;
+            border-bottom: 1px dashed #e5e7eb;
         }
-        .card {
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        .input-group label { 
+            flex-basis: 65%; 
+            text-align: left; 
+            padding-right: 10px; 
+            font-size: 0.875rem; 
+            color: #4b5563; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
+        .input-group input { 
+            flex-basis: 35%; 
+            padding: 4px 8px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 6px; 
+            text-align: right; 
+            font-size: 0.875rem; 
+            appearance: textfield; /* Fix for number arrows */
+        }
+        .input-group input::-webkit-outer-spin-button,
+        .input-group input::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        input[type="number"] {
-            -moz-appearance: textfield;
-        }
-        /* Style pour la première colonne (Nom du produit) */
-        .sticky-col {
-            position: sticky;
-            left: 0;
-            z-index: 20;
-            background-color: white; /* Assure que le fond reste blanc lors du défilement */
-        }
-        /* Style pour les en-têtes de tableau */
-        .sticky-header {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        /* Assure que l'en-tête de la table de détail colle aussi */
-        .sticky-header-detail table thead {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        /* Assure que la première colonne de la table de détail colle */
-        .sticky-col-detail {
-            position: sticky;
-            left: 0;
-            z-index: 20;
-            background-color: #f9fafb; /* bg-gray-50 */
-            border-right: 1px solid #e5e7eb; /* border-gray-200 */
-        }
-        /* Applique un fond aux cellules de la colonne sticky pour qu'elles masquent le contenu */
-        .sticky-col-detail.bg-blue-50 { background-color: #EFF6FF; }
-        .sticky-col-detail.bg-purple-50 { background-color: #FAF5FF; }
-        .sticky-col-detail.bg-red-50 { background-color: #FEF2F2; }
-        .sticky-col-detail.bg-blue-100 { background-color: #DBEAFE; }
-        .sticky-col-detail.bg-green-100 { background-color: #D1FAE5; }
-        .sticky-col-detail.bg-green-50 { background-color: #ECFDF5; }
+
+        /* Codes couleurs */
+        .monthly-card { border-left: 5px solid #3b82f6; } /* Bleu pour Abonnements Mensuels */
+        .prepaid-card { border-left: 5px solid #10b981; } /* Vert pour Offres Prépayées */
+        .result-cell { font-weight: 600; text-align: right; }
+        .text-monthly { color: #3b82f6; }
+        .text-prepaid { color: #10b981; }
+        .text-xforce { color: #ef4444; } /* Rouge pour X-Force */
+        .text-profit { color: #f97316; } /* Orange pour Profit Sharing */
         
-        .cf-total-cell {
-            min-width: 60px; /* Assure une largeur minimale pour les cellules mensuelles */
+        /* Styles pour les onglets */
+        .tab-button {
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            border-bottom: none;
+            background-color: #e5e7eb;
+            color: #4b5563;
         }
-        /* Classe pour aligner les métriques de résultats */
-        .result-metric {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.25rem 0;
+        .tab-button.active {
+            background-color: #ffffff;
+            color: #1f2937;
+            border: 1px solid #d1d5db;
+            border-bottom: 1px solid #ffffff;
         }
-        .result-label {
-            font-weight: 500;
-        }
-        .result-value {
-            font-weight: 700;
-            text-align: right;
-        }
-
-        /* --- STYLES D'IMPRESSION (PDF) --- */
-        @media print {
-            /* Général */
-            body {
-                background-color: white !important;
-                padding: 0;
-                margin: 0;
-            }
-            .max-w-7xl {
-                max-width: 100% !important;
-                padding: 1rem;
-                margin: 0;
-            }
-
-            /* Masquer tous les éléments interactifs et de configuration */
-            #downloadPdfButton,
-            #globalConfig,
-            #productConfigContainer,
-            .sticky-header,
-            .sticky-col,
-            .sticky-col-detail {
-                display: none !important;
-            }
-            
-            /* S'assurer que les titres restent visibles */
-            h1, h2, h3, h4 {
-                color: #1f2937 !important; /* text-gray-800 */
-                margin-top: 1.5rem;
-                page-break-after: avoid;
-            }
-            
-            /* Afficher les descriptions masquées (non-input) */
-            .text-gray-600.mb-8 {
-                display: block !important;
-            }
-
-            /* Forcer l'affichage des résultats et des tables de détail */
-            .card {
-                box-shadow: none !important;
-                border: 1px solid #d1d5db !important;
-                border-radius: 0.5rem;
-                padding: 1rem !important;
-                page-break-inside: avoid;
-            }
-            
-            /* Les tableaux de détail doivent s'afficher en entier */
-            .overflow-x-auto {
-                overflow: visible !important;
-                width: 100%;
-            }
-            .sticky-header-detail table {
-                table-layout: fixed;
-                width: 100%;
-                font-size: 0.6rem; /* Réduire la taille de la police pour les nombreuses colonnes */
-            }
-            .sticky-header-detail table thead th,
-            .sticky-header-detail table tbody td {
-                padding: 0.1rem 0.2rem;
-                white-space: nowrap;
-            }
-
-            /* Les sauts de page pour les grandes sections de détail */
-            #clientParkDetail, #revenueDetail, #cashFlowDetail {
-                 page-break-before: always;
-            }
+        .tab-content {
+            border: 1px solid #d1d5db;
+            border-top: none;
+            border-radius: 0 8px 8px 8px;
+            padding: 1rem;
+            background-color: white;
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <div class="max-w-7xl mx-auto">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-            <svg class="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-            Projection de Rentabilité des Offres d'Assurance
-        </h1>
-        <p class="text-gray-600 mb-8">
-            Ajustez les variables pour comparer la rentabilité nette de l'Offre 1 (AS) et de l'Offre 2 (AP). 
-            <span class="font-bold text-red-600">Le calcul est basé sur 4 ans (48 mois de ventes continues).</span> L'analyse des flux s'étend sur 61 mois.
-            <span class="block mt-2 italic text-sm text-gray-700">
-                ⚠️ IMPORTANT: Par défaut, le modèle assume que les volumes de produits de base et les taux de placement (TA) sont **identiques chaque mois** sur toute la période de vente (M1 à M48) pour simplifier la projection de gains et la comparaison.
-            </span>
-            <span class="block mt-1 italic text-sm text-gray-700">
-                ℹ️ Remarque: Pour l'Offre 1, le **Profit Sharing** est comptabilisé dans l'encaissement initial du mois M1 (lors de la vente) par souci de simplification, bien que le versement réel puisse être différé.
-            </span>
-        </p>
+    <header class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Comparateur de Projections de Revenus (4 Ans)</h1>
+        <p class="text-gray-600 mt-1">Saisissez les variables ci-dessous pour comparer les propositions AS et AP en temps réel.</p>
+    </header>
 
-        <!-- Configuration Globale -->
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4 pt-4 border-t border-gray-300">Variables Globales</h2>
-        <div id="globalConfig" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div id="app" class="space-y-12">
+        <!-- Section 1: Variables Communes -->
+        <section class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-semibold mb-4 text-indigo-700">1. Variables Communes (Volumes Mensuels Vendus)</h2>
+            <div id="global-volumes" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <!-- Volume Inputs will be inserted here by JS -->
+            </div>
+        </section>
+
+        <!-- Section 2: Inputs des Variables (avec Onglets) -->
+        <div class="xl:w-full space-y-4">
+            <h2 class="text-2xl font-bold text-gray-800">2. Variables des Offres</h2>
             
-            <!-- Taux d'Actualisation -->
-            <div class="bg-yellow-50 p-4 card col-span-1 border border-yellow-300">
-                <label for="discountRate" class="block text-sm font-medium text-gray-700">Taux d'Actualisation Annuel (%)</label>
-                <input type="number" id="discountRate" value="5" step="0.1" min="0" class="mt-1 block w-full rounded-lg border-yellow-300 shadow-sm p-2 text-lg font-semibold border focus:ring-yellow-500 focus:border-yellow-500" oninput="calculate()">
-            </div>
-            
-            <!-- Profit Sharing Offre 1 -->
-            <div class="bg-blue-50 p-4 card col-span-1 border border-blue-200">
-                <label for="profitSharing" class="block text-sm font-medium text-blue-700">Profit Sharing Offre 1 (€/vente)</label>
-                <input type="number" id="profitSharing" value="1" step="0.01" min="0" class="mt-1 block w-full rounded-lg border-blue-300 shadow-sm p-2 text-lg font-semibold border focus:ring-blue-500 focus:border-blue-500" oninput="calculate()">
+            <div class="flex space-x-1">
+                <button class="tab-button active" onclick="switchTab('AS')">PROPOSITION 1 (AS)</button>
+                <button class="tab-button" onclick="switchTab('AP')">PROPOSITION 2 (AP)</button>
             </div>
 
-            <!-- Taux de pose de film Wefix (Mise à jour pour l'Offre 1) -->
-            <div class="bg-blue-50 p-4 card col-span-1 border border-blue-200">
-                <label for="wefixRate" class="block text-sm font-medium text-blue-700">Taux Pose Film Wefix (%) <span class="font-bold">(Offre 1 - iPhones)</span></label>
-                <input type="number" id="wefixRate" value="70" step="1" min="0" max="100" class="mt-1 block w-full rounded-lg border-blue-300 shadow-sm p-2 text-lg font-semibold border focus:ring-blue-500 focus:border-blue-500" oninput="calculate()">
-            </div>
-
-            <!-- Montant perçu par pose Wefix (Mise à jour pour l'Offre 1) -->
-            <div class="bg-blue-50 p-4 card col-span-1 border border-blue-200">
-                <label for="wefixPrice" class="block text-sm font-medium text-blue-700">Montant Wefix (€/pose) <span class="font-bold">(Offre 1 - iPhones)</span></label>
-                <input type="number" id="wefixPrice" value="13" step="0.01" min="0" class="mt-1 block w-full rounded-lg border-blue-300 shadow-sm p-2 text-lg font-semibold border focus:ring-blue-500 focus:border-blue-500" oninput="calculate()">
-            </div>
-        </div>
-        
-        <!-- Description du déplacement des variables d'attrition (Blocs vides) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-blue-100/50 p-6 card border-2 border-blue-300">
-                <h3 class="text-xl font-bold text-blue-800 mb-4">Offre 1 (AS) - Variables Clés</h3>
-            </div>
-            <div class="bg-green-100/50 p-6 card border-2 border-green-300">
-                <h3 class="text-xl font-bold text-green-800 mb-4">Offre 2 (AP) - Variables Clés</h3>
+            <div id="product-inputs" class="tab-content">
+                <!-- Product Input Cards will be inserted here by JS (depending on active tab) -->
             </div>
         </div>
 
-
-        <!-- Tableau des Produits, Taux d'Attachement, Volumes et Marges -->
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4 pt-4 border-t border-gray-300">Configuration Détaillée par Famille de Produits</h2>
-        <div id="productConfigContainer" class="bg-white card overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="sticky-header">
-                    <!-- NIVEAU 1 : Séparation Offre 1 / Offre 2 -->
-                    <tr>
-                        <th rowspan="2" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider sticky-col bg-gray-100 border-b border-r border-gray-300">Famille de Produit</th>
-                        <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider bg-gray-100 border-b border-gray-300">Volume de Base <span class="font-bold">(Mensuel)</span></th>
-                        <!-- Colspan ajusté de 3 à 6 pour inclure Renoncement, Churn et Durée de Vie -->
-                        <th colspan="6" class="px-3 py-2 text-center text-sm font-bold bg-blue-100 text-blue-800 border-b border-blue-300">OFFRE 1 (AS)</th>
-                        <!-- Colspan ajusté de 3 à 6 pour inclure Renoncement, Churn et Durée de Vie -->
-                        <th colspan="6" class="px-3 py-2 text-center text-sm font-bold bg-green-100 text-green-800 border-b border-green-300">OFFRE 2 (AP)</th>
-                    </tr>
-                    <!-- NIVEAU 2 : Détails des métriques -->
-                    <tr class="bg-gray-50">
-                        <!-- OFFER 1 COLUMNS -->
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Prix/Mois (€)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Taux Marge (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Taux d'Attachement (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Taux Renonc. (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-blue-200">Taux Churn Mns (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r border-gray-200">Durée Vie Max (Mois)</th>
-                        
-                        <!-- OFFER 2 COLUMNS -->
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Prix/Mois (€)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Taux Marge (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Taux d'Attachement (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Taux Renonc. (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r border-green-200">Taux Churn Mns (%)</th>
-                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50">Durée Vie Max (Mois)</th>
-                    </tr>
-                </thead>
-                <tbody id="productConfig" class="bg-white divide-y divide-gray-200">
-                    <!-- Data rows injected by JS -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Résultats de la Projection -->
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4 pt-8 border-t border-gray-300 mt-8">Résultats Consolides (Projection sur 4 Ans - Cumulatif)</h2>
-        <p class="text-sm italic text-gray-600 mb-4">Les montants annuels sont cumulatifs depuis le début de la simulation (Mois 1).</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Offre 1 (AS) Results -->
-            <div class="bg-blue-50 border-2 border-blue-400 p-6 card">
-                <h3 class="text-xl font-bold text-blue-900 mb-4">Offre 1 (AS) - Détail Financier</h3>
-                <div class="space-y-2 text-sm">
-                    <p class="result-metric text-base text-gray-800"><span class="result-label">Total Ventes (48 mois):</span> <span id="totalSales1" class="result-value font-extrabold">0</span></p>
-                    <p class="result-metric text-gray-700"><span class="result-label">Total Clients Effectifs (après Renonciation):</span> <span id="effectiveClients1" class="result-value font-medium">0</span></p>
-                    <hr class="border-blue-200">
-                    <p class="result-metric font-bold text-green-700 text-xl"><span class="result-label">Marge Totale Nette (Non Actualisée) :</span> <span id="totalMargin1" class="result-value font-extrabold text-xl">0,00 €</span></p>
-                    
-                    <!-- Détails de la Marge - Alignement ML-4 -->
-                    <p class="result-metric text-yellow-700 italic ml-4"><span class="result-label">Marge Avancée (12 mois, totale):</span> <span id="upfrontMargin1" class="result-value font-medium">0,00 €</span></p>
-                    <p class="result-metric text-yellow-700 italic ml-4"><span class="result-label">Air Time (Mois 13+, totale):</span> <span id="tailMargin1" class="result-value font-medium">0,00 €</span></p>
-                    
-                    <p class="result-metric font-bold text-purple-700 text-lg"><span class="result-label">Profit Sharing Total :</span> <span id="totalProfitSharing" class="result-value font-extrabold">0,00 €</span></p>
-                    
-                    <!-- Revenu Wefix -->
-                    <p class="result-metric font-bold text-red-700 text-lg"><span class="result-label">Revenus Wefix Total :</span> <span id="totalWefixRevenue" class="result-value font-extrabold">0,00 €</span></p>
-                    
-                    <hr class="border-blue-400">
-                    
-                    <!-- LIGNE CLÉ : Encaissement Initial au moment de la vente -->
-                    <p class="result-metric font-black text-red-600 text-xl border-t pt-2 border-dashed border-red-300">
-                        <span class="result-label">Encaissement Initial M1 (Marge Avancée + P.S + Wefix) :</span> 
-                        <span id="initialCashIn1" class="result-value font-black">0,00 €</span>
-                    </p>
-
-                    <p class="result-metric font-black text-blue-900 mt-4 text-2xl"><span class="result-label">Gain Total Net (Marge + P.S + Wefix):</span> <span id="totalNetGain1" class="result-value font-black">0,00 €</span></p>
-                </div>
-                
-                <!-- Résultat Annuel Cumulatif Offre 1 -->
-                <h4 class="text-lg font-bold text-gray-700 mt-6 mb-2 pt-2 border-t border-gray-300">Gains Cumulés (Non Actualisés)</h4>
-                <div class="space-y-1 text-sm">
-                    <p class="result-metric font-medium text-gray-800"><span class="result-label">Année 1 (M1-M12):</span> <span id="cumulGain1_1" class="result-value font-semibold text-base">0,00 €</span></p>
-                    <p class="result-metric font-medium text-gray-800"><span class="result-label">Année 2 (M1-M24):</span> <span id="cumulGain1_2" class="result-value font-semibold text-base">0,00 €</span></p>
-                    <p class="result-metric font-medium text-gray-800"><span class="result-label">Année 3 (M1-M36):</span> <span id="cumulGain1_3" class="result-value font-semibold text-base">0,00 €</span></p>
-                    <p class="result-metric font-medium text-gray-800"><span class="result-label">Année 4 (M1-M48):</span> <span id="cumulGain1_4" class="result-value font-semibold text-base">0,00 €</span></p>
-                </div>
-
-                <!-- NOUVEAU: VAN Totale -->
-                <hr class="border-blue-400 mt-4">
-                <p class="result-metric font-black text-red-700 mt-2 text-2xl">
-                    <span class="result-label">Valeur Actuelle Nette (VAN) :</span> 
-                    <span id="totalNPV1" class="result-value font-black">0,00 €</span>
-                </p>
-            </div>
-
-            <!-- Offre 2 (AP) Results -->
-            <div class="bg-green-50 border-2 border-green-400 p-6 card">
-                <h3 class="text-xl font-bold text-green-900 mb-4">Offre 2 (AP) - Détail Financier</h3>
-                <div class="space-y-2 text-sm">
-                    <p class="result-metric text-base text-gray-800"><span class="result-label">Total Ventes (48 mois):</span> <span id="totalSales2" class="result-value font-extrabold text-base">0</span></p>
-                    <p class="result-metric text-gray-700"><span class="result-label">Total Clients Effectifs (après Renonciation):</span> <span id="effectiveClients2" class="result-value font-medium">0</span></p>
-                    <hr class="border-green-300">
-                    <p class="result-metric font-bold text-blue-700 text-xl"><span class="result-label">Marge Totale Nette (Non Actualisée) :</span> <span id="totalMargin2" class="result-value font-extrabold text-xl">0,00 €</span></p>
-                    
-                    <!-- Harmonisation de la mise en page (Placeholders) -->
-                    <p class="result-metric text-sm italic ml-4 text-gray-500"><span class="result-label">Marge Avancée (12 mois, totale):</span> <span class="result-value font-medium text-gray-400">N/A (0,00 €)</span></p>
-                    <p class="result-metric text-sm italic ml-4 text-gray-500"><span class="result-label">Air Time (Mois 13+, totale):</span> <span class="result-value font-medium text-gray-400">N/A (0,00 €)</span></p>
-                    <p class="result-metric font-bold text-gray-500 text-lg"><span class="result-label">Profit Sharing Total :</span> <span class="result-value font-extrabold text-gray-400">N/A (0,00 €)</span></p>
-                    <p class="result-metric font-bold text-gray-500 text-lg"><span class="result-label">Revenus Wefix Total :</span> <span class="result-value font-extrabold text-gray-400">N/A (0,00 €)</span></p>
-                    
-                    <hr class="border-green-400">
-
-                    <!-- LIGNE CLÉ : Encaissement Initial au moment de la vente (Placeholder) -->
-                    <p class="result-metric font-black text-gray-600 text-xl border-t pt-2 border-dashed border-gray-300">
-                        <span class="result-label">Encaissement Initial M1 :</span> 
-                        <span id="initialCashIn2" class="result-value font-black">0,00 €</span>
-                    </p>
-
-                    <p class="result-metric font-black text-green-900 mt-4 text-2xl"><span class="result-label">Gain Total Net (Marge seule):</span> <span id="totalNetGain2" class="result-value font-black">0,00 €</span></p>
-                </div>
-
-                <!-- Résultat Annuel Cumulatif Offre 2 -->
-                <h4 class="text-lg font-bold text-gray-700 mt-6 mb-2 pt-2 border-t border-gray-300">Gains Cumulés (Non Actualisés)</h4>
-                <div class="space-y-1 text-sm">
-                    <p class="result-metric font-medium text-gray-800"><span class="result-label">Année 1 (M1-M12):</span> <span id="cumulGain2_1" class="result-value font-semibold text-base">0,00 €</span></p>
-                    <p class="result-metric font-medium text-gray-800"><span class="result-label">Année 2 (M1-M24):</span> <span id="cumulGain2_2" class="result-value font-semibold text-base">0,00 €</span></p>
-                    <p class="result-metric font-medium text-gray-800"><span class="result-label">Année 3 (M1-M36):</span> <span id="cumulGain2_3" class="result-value font-semibold text-base">0,00 €</span></p>
-                    <p class="result-metric font-medium text-gray-800"><span class="result-label">Année 4 (M1-M48):</span> <span id="cumulGain2_4" class="result-value font-semibold text-base">0,00 €</span></p>
-                </div>
-                
-                <!-- NOUVEAU: VAN Totale -->
-                <hr class="border-green-400 mt-4">
-                <p class="result-metric font-black text-red-700 mt-2 text-2xl">
-                    <span class="result-label">Valeur Actuelle Nette (VAN) :</span> 
-                    <span id="totalNPV2" class="result-value font-black">0,00 €</span>
-                </p>
+        <!-- Section 3: Synthèse des Projections (Déplacée en bas) -->
+        <div class="xl:w-full space-y-8">
+            <h2 class="text-2xl font-bold text-gray-800">3. Synthèse des Projections de Gains sur 4 Ans</h2>
+            <div id="results-summary" class="space-y-6 grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <!-- Result Tables will be inserted here by JS -->
             </div>
         </div>
-
-        <!-- Synthèse de Comparaison VAN -->
-        <div id="comparisonSummary" class="mt-8 p-6 text-center card bg-gray-800 text-white border-2 border-red-500">
-            <p class="text-xl font-bold">SYNTHÈSE DE RENTABILITÉ ACTUALISÉE (VAN)</p>
-            <p id="vanWinnerMessage" class="text-3xl font-extrabold mt-2 text-yellow-300">Veuillez effectuer le calcul.</p>
-            <!-- Ligne de différence VAN ajoutée -->
-            <p id="vanDifference" class="text-lg font-semibold mt-1 text-gray-300"></p> 
-            <p class="text-sm mt-1">Comparaison basée sur la Valeur Actuelle Nette de tous les flux de trésorerie accumulés sur l'horizon de 61 mois.</p>
-        </div>
-        
-        <!-- Bouton Télécharger PDF (Retrait de l'onclick en ligne) -->
-        <button id="downloadPdfButton" class="mt-6 w-full md:w-auto flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-xl shadow-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out transform hover:scale-105">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-            Télécharger le Résumé (PDF)
-        </button>
-
-
-        <!-- Suivi du Parc Client -->
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4 pt-8 border-t border-gray-300 mt-8">Suivi du Parc Client Actif</h2>
-        <p id="parkDescription" class="text-gray-600 mb-4">
-            Simulation du nombre total de clients actifs chaque mois, en tenant compte des nouvelles ventes,
-            de la renonciation (M3), du churn mensuel exponentiel (M13) et de la fin de vie. 
-            Les variables d'attrition sont définies individuellement pour chaque Famille de Produit.
-        </p>
-        <div id="clientParkDetail" class="bg-white card overflow-x-auto sticky-header-detail">
-            <!-- Tableau du Parc Client inséré ici -->
-        </div>
-
-        <!-- Analyse Détaillée des Revenus -->
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4 pt-8 border-t border-gray-300 mt-8">Analyse Détaillée des Revenus (Non Actualisés)</h2>
-        <p class="text-gray-600 mb-4">Affichage du chiffre d'affaires total (non margé) par mois pour toutes les familles de produits (hors P.S. et Wefix).</p>
-        <div id="revenueDetail" class="bg-white card overflow-x-auto sticky-header-detail">
-            <!-- Tableau des Revenus inséré ici -->
-        </div>
-
-        <!-- Analyse Détaillée de la Marge Nette et des Flux -->
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4 pt-8 border-t border-gray-300 mt-8">Analyse Détaillée de la Marge Nette et des Flux (Cash Flow)</h2>
-        <p class="text-gray-600 mb-4">Affichage des flux de trésorerie nets (Marge, P.S., Wefix) par mois (sur 61 mois).</p>
-        <div id="cashFlowDetail" class="bg-white card overflow-x-auto sticky-header-detail">
-            <!-- Tableaux de Cash Flow insérés ici -->
-        </div>
-
-
     </div>
 
     <script>
-        // --- CONSTANTES ET DONNÉES DE BASE ---
-        const MAX_SALES_MONTHS = 48; // Période de vente (Années 1 à 4)
-        const MAX_ANALYSIS_MONTHS = 61; // M1 à M61 (index 0 à 60)
-        const M1_TAIL_RATE = 0.10; // Marge 10% Offre 1 après 12 mois (fixe)
+        // Taux de TVA par défaut (utilisé pour convertir TTC en HT)
+        const TVA_RATE = 0.20; // 20%
+        const NB_YEARS = 4;
+        const MONTHS_PER_YEAR = 12;
+        const TOTAL_MONTHS = NB_YEARS * MONTHS_PER_YEAR;
 
-        // Définition initiale des produits et de leurs valeurs
-        // Modification: Les taux d'attachement (ta2) sont maintenant égalisés à ta1 par défaut.
-        const products = [
-            // r: renunciation, c: churn, l: life, ta: taux attachement
-            // L'index 0 est 'iPhones', utilisé pour le calcul Wefix
-            { name: "iPhones", volume: 1000, price1: 19, margin1: 37, ta1: 25, r1: 15, c1: 4, l1: 18, price2: 12, margin2: 35, ta2: 25, r2: 15, c2: 4, l2: 18 },
-            { name: "MacBook", volume: 1000, price1: 14, margin1: 37, ta1: 12, r1: 15, c1: 4, l1: 18, price2: 12, margin2: 35, ta2: 12, r2: 15, c2: 4, l2: 18 },
-            { name: "AirPods", volume: 1000, price1: 8, margin1: 37, ta1: 9, r1: 15, c1: 4, l1: 18, price2: 6, margin2: 35, ta2: 9, r2: 15, c2: 4, l2: 18 },
-            { name: "iPads", volume: 1000, price1: 12, margin1: 37, ta1: 12, r1: 15, c1: 4, l1: 18, price2: 10, margin2: 35, ta2: 12, r2: 15, c2: 4, l2: 18 },
-            { name: "Apple Watch", volume: 1000, price1: 8, margin1: 37, ta1: 15, r1: 15, c1: 4, l1: 18, price2: 6, margin2: 35, ta2: 15, r2: 15, c2: 4, l2: 18 },
-        ];
-
-
-        // --- UTILS DE FORMATAGE ---
-
-        function formatCurrency(value, decimals = 2) {
-            if (isNaN(value) || value === null) return "0,00 €";
-            return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: 'EUR',
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals
-            }).format(value);
-        }
-
-        function formatNumber(value, decimals = 0) {
-            if (isNaN(value) || value === null) return "0";
-            return new Intl.NumberFormat('fr-FR', {
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals
-            }).format(Math.round(value)); // Arrondi pour les clients/ventes
-        }
-        
-        // --- LOGIQUE DE L'APPLICATION ---
-
-        /**
-         * Récupère toutes les variables et la configuration produit depuis les inputs du DOM.
-         * Les variables d'attrition sont maintenant lues au niveau de chaque produit.
-         */
-        function getInputs() {
-            const annualRate = (parseFloat(document.getElementById('discountRate').value) || 0) / 100;
-            
-            const inputs = {
-                // VARIABLES GLOBALES CONSERVÉES
-                profitSharingUnit: parseFloat(document.getElementById('profitSharing').value) || 0,
-                wefixRate: (parseFloat(document.getElementById('wefixRate').value) || 0) / 100,
-                wefixPrice: parseFloat(document.getElementById('wefixPrice').value) || 0,
-                annualRate: annualRate,
-                monthlyRate: annualRate / 12,
-
-                // Configuration Produit (mise à jour depuis les inputs)
-                products: products.map((p, index) => ({
-                    name: p.name,
-                    volume: parseFloat(document.getElementById(`volume_${index}`).value) || 0,
-                    
-                    // Offre 1 - Finance
-                    price1: parseFloat(document.getElementById(`price1_${index}`).value) || 0,
-                    margin1Rate: (parseFloat(document.getElementById(`margin1_${index}`).value) || 0) / 100,
-                    ta1: (parseFloat(document.getElementById(`ta1_${index}`).value) || 0) / 100,
-                    // Offre 1 - Attrition
-                    renunciationRate1: (parseFloat(document.getElementById(`renunciation1_${index}`).value) || 0) / 100,
-                    churnRate1: (parseFloat(document.getElementById(`churn1_${index}`).value) || 0) / 100,
-                    avgContractLife1: parseInt(document.getElementById(`life1_${index}`).value) || 1,
-
-                    // Offre 2 - Finance
-                    price2: parseFloat(document.getElementById(`price2_${index}`).value) || 0,
-                    margin2Rate: (parseFloat(document.getElementById(`margin2_${index}`).value) || 0) / 100,
-                    ta2: (parseFloat(document.getElementById(`ta2_${index}`).value) || 0) / 100,
-                    // Offre 2 - Attrition
-                    renunciationRate2: (parseFloat(document.getElementById(`renunciation2_${index}`).value) || 0) / 100,
-                    churnRate2: (parseFloat(document.getElementById(`churn2_${index}`).value) || 0) / 100,
-                    avgContractLife2: parseInt(document.getElementById(`life2_${index}`).value) || 1,
-                }))
-            };
-            return inputs;
-        }
-
-        /**
-         * Calcule la Valeur Actuelle Nette (NPV) d'un flux de trésorerie.
-         */
-        function calculateNPV(cashFlows, monthlyDiscountRate) {
-            let npv = 0;
-            // L'index 0 correspond au mois t=0
-            for (let t = 0; t < cashFlows.length; t++) {
-                npv += cashFlows[t] / Math.pow(1 + monthlyDiscountRate, t);
-            }
-            return npv;
-        }
-
-        /**
-         * Calcule la population active d'une cohorte pour un mois donné (m).
-         * Utilise les taux de churn/life spécifiques au produit.
-         */
-        function calculateActivePopulation(m, N_cohort, N_eff_cohort, churnRate, maxLife) {
-            if (m >= maxLife) {
-                return 0;
-            }
-            if (m < 2) { 
-                return N_cohort; // M1, M2 (brut, avant renonciation)
-            } else if (m < 12) { 
-                return N_eff_cohort; // M3 à M12 (net renonciation, avant churn)
-            } else { // M13 et + -> Churn Mensuel exponentiel
-                // Exponent = m - 11 (M13 -> exp 1, M14 -> exp 2, ...)
-                const exponent = m - 11; 
-                let P_active = N_eff_cohort * Math.pow((1 - churnRate), exponent);
-                return Math.max(0, P_active);
-            }
-        }
-        
-        /**
-         * Calcule le Cash Flow et le Revenu pour l'Offre 1 (AS) pour un mois (m) donné.
-         */
-        function calculateOffer1CashFlow(m, N_cohort, N_eff_cohort, p, wefixRevenue_cohort) {
-            let marginCF = 0;
-            let revenue = 0;
-            let marginAccumulated = 0;
-            let isUpfront = false;
-            let isTail = false;
-
-            if (m === 0) { 
-                // M1: Encaissement Initial
-                // Marge Avancée (12 mois) + PS + Wefix sont comptabilisés dans le flux de trésorerie M1 (m=0)
-                marginCF = N_eff_cohort * p.price1 * p.margin1Rate * 12; // Marge Avancée (12 mois)
-                revenue = N_cohort * p.price1 * 12; // Revenu (12 mois)
-                marginAccumulated = marginCF;
-                isUpfront = true;
-            } else if (m === 12 || m === 13) { 
-                // M13 et M14: Marge Queue (Air Time)
-                // Note : Le churn n'est pas appliqué ici directement car la P_active est calculée avant
-                const P_active = calculateActivePopulation(m, N_cohort, N_eff_cohort, 0, 999); 
-                if (P_active > 0) {
-                    marginCF = P_active * p.price1 * M1_TAIL_RATE;
-                    revenue = P_active * p.price1;
-                    marginAccumulated = marginCF;
-                    isTail = true;
+        // Structure de données complète avec les valeurs par défaut
+        let data = {
+            // Variables Globales
+            volumes: {
+                iPhones: 161968,
+                MacBook: 56096,
+                AirPods: 127946,
+                iPads: 50000, // Défaut
+                'Apple Watch': 30000 // Défaut
+            },
+            // Variables Spécifiques aux Offres
+            offers: {
+                AS: {
+                    global: {
+                        profitSharing_A1: 0, // En €
+                        profitSharing_A2: 0,
+                        profitSharing_A3: 0,
+                        profitSharing_A4: 0,
+                        xforce_rate: 0.70, // Taux de pose du film
+                        xforce_revenue: 13, // Revenu unitaire X-Force (€ TTC)
+                        tax_rate: 0.20, // Taux Fiscal (TTC vers HT), par défaut 20%
+                    },
+                    iPhones: {
+                        monthly: {
+                            price_ttc: 15.99,
+                            margin_rate: 0.29,
+                            attachment_rate: 0.23,
+                            renunciation_rate: 0.19,
+                            churn_monthly: 0.04, // Taux de churn dès M13
+                            max_duration_months: 48, // Durée de vie maximale (4 ans)
+                            commitment_months: 12, // Non variable
+                        },
+                        prepaid_12m: {
+                            price_ttc: 199.99, // Exemple
+                            margin_rate: 0.29,
+                            attachment_rate: 0.05, // Défaut
+                            duration_months: 12, // Non variable
+                        }
+                    },
+                    MacBook: {
+                        monthly: {
+                            price_ttc: 15.99,
+                            margin_rate: 0.42,
+                            attachment_rate: 0.09,
+                            renunciation_rate: 0.17,
+                            churn_monthly: 0.04,
+                            max_duration_months: 48,
+                            commitment_months: 12, // Non variable
+                        },
+                        prepaid_12m: {
+                            price_ttc: 199.99,
+                            margin_rate: 0.42,
+                            attachment_rate: 0.03,
+                            duration_months: 12,
+                        }
+                    },
+                    AirPods: {
+                        monthly: {
+                            price_ttc: 4.99,
+                            margin_rate: 0.305,
+                            attachment_rate: 0.03,
+                            renunciation_rate: 0.08,
+                            churn_monthly: 0.04,
+                            max_duration_months: 48,
+                            commitment_months: 12,
+                        },
+                        prepaid_12m: {
+                            price_ttc: 59.99,
+                            margin_rate: 0.305,
+                            attachment_rate: 0.01,
+                            duration_months: 12,
+                        }
+                    },
+                    iPads: {
+                        monthly: {
+                            price_ttc: 8.99,
+                            margin_rate: 0.305,
+                            attachment_rate: 0.08,
+                            renunciation_rate: 0.08,
+                            churn_monthly: 0.04,
+                            max_duration_months: 48,
+                            commitment_months: 12,
+                        },
+                        prepaid_12m: {
+                            price_ttc: 99.99,
+                            margin_rate: 0.305,
+                            attachment_rate: 0.02,
+                            duration_months: 12,
+                        }
+                    },
+                    'Apple Watch': {
+                        monthly: {
+                            price_ttc: 4.99,
+                            margin_rate: 0.305,
+                            attachment_rate: 0.09,
+                            renunciation_rate: 0.08,
+                            churn_monthly: 0.04,
+                            max_duration_months: 48,
+                            commitment_months: 12,
+                        },
+                        prepaid_12m: {
+                            price_ttc: 59.99,
+                            margin_rate: 0.305,
+                            attachment_rate: 0.01,
+                            duration_months: 12,
+                        }
+                    },
+                },
+                AP: {
+                    global: {
+                        tax_rate: 0.20, // Taux Fiscal (TTC vers HT)
+                    },
+                    iPhones: {
+                        monthly: {
+                            price_ttc: 12.99, // Exemple
+                            margin_rate: 0.29,
+                            attachment_rate: 0.23,
+                            renunciation_rate: 0.19,
+                            churn_monthly: 0.04, // Taux de churn dès M13
+                            max_duration_months: 48,
+                            commitment_months: 12, // Exemple
+                        },
+                        prepaid_24m: {
+                            price_ttc: 249.99, // Exemple
+                            margin_rate: 0.29,
+                            attachment_rate: 0.05,
+                            duration_months: 24, // Non variable
+                        }
+                    },
+                    MacBook: {
+                        prepaid_12m: {
+                            price_ttc: 199.99,
+                            margin_rate: 0.42,
+                            attachment_rate: 0.09,
+                            duration_months: 12,
+                        },
+                        prepaid_36m: {
+                            price_ttc: 499.99, // Exemple
+                            margin_rate: 0.42,
+                            attachment_rate: 0.03,
+                            duration_months: 36, // Non variable
+                        }
+                    },
+                    AirPods: {
+                        prepaid_24m: {
+                            price_ttc: 99.99,
+                            margin_rate: 0.305,
+                            attachment_rate: 0.03,
+                            duration_months: 24,
+                        }
+                    },
+                    iPads: {
+                        monthly: {
+                            price_ttc: 7.99, // Exemple
+                            margin_rate: 0.305,
+                            attachment_rate: 0.08,
+                            renunciation_rate: 0.08,
+                            churn_monthly: 0.04,
+                            max_duration_months: 48,
+                            commitment_months: 12, // Exemple
+                        },
+                        prepaid_24m: {
+                            price_ttc: 149.99, // Exemple
+                            margin_rate: 0.305,
+                            attachment_rate: 0.02,
+                            duration_months: 24,
+                        }
+                    },
+                    'Apple Watch': {
+                        monthly: {
+                            price_ttc: 3.99, // Exemple
+                            margin_rate: 0.305,
+                            attachment_rate: 0.09,
+                            renunciation_rate: 0.08,
+                            churn_monthly: 0.04,
+                            max_duration_months: 48,
+                            commitment_months: 12, // Exemple
+                        },
+                        prepaid_24m: {
+                            price_ttc: 89.99, // Exemple
+                            margin_rate: 0.305,
+                            attachment_rate: 0.01,
+                            duration_months: 24,
+                        }
+                    },
                 }
             }
-            // Autres mois (M2 à M12) ont un CF/Revenu de 0 car inclus dans M1.
+        };
+
+        let activeOfferTab = 'AS'; // Track the currently active tab
+
+        // Fonction utilitaire pour lire la valeur d'un input, convertie en nombre
+        const getInputValue = (id, isRate = false, isInt = false) => {
+            const el = document.getElementById(id);
+            if (!el) return 0;
+            let val = el.value.replace(/[^0-9,.-]/g, '').replace(',', '.');
+            let num = parseFloat(val);
+            if (isNaN(num)) return 0;
+
+            if (isRate) {
+                // Si c'est un taux (%), on divise par 100
+                return num / 100;
+            }
+            if (isInt) {
+                return parseInt(num);
+            }
+            return num;
+        };
+        
+        // Fonction pour changer l'onglet actif
+        const switchTab = (offerType) => {
+            activeOfferTab = offerType;
+            // Mettre à jour les classes des boutons d'onglet
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                if (btn.textContent.includes(offerType)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            // Rendre le contenu de l'onglet
+            renderProductInputs();
+        };
+
+        // --- Fonctions de rendu HTML ---
+
+        // Rendre les inputs de volume global (commun)
+        const renderGlobalVolumes = () => {
+            const container = document.getElementById('global-volumes');
+            container.innerHTML = `
+                <div class="input-group col-span-5 mb-4 p-2 bg-gray-50 rounded-lg border-none">
+                    <label class="font-bold text-gray-700">Taux Fiscal (TTC vers HT)</label>
+                    <input type="number" step="0.01" min="0" id="global-tax-rate" value="${(data.offers.AS.global.tax_rate * 100).toFixed(2)}" oninput="updateData('AS', 'global', 'tax_rate', true); updateData('AP', 'global', 'tax_rate', true); calculateProjections();" class="text-right w-full font-bold bg-white" />
+                    <span class="text-right text-gray-500 ml-1">%</span>
+                </div>
+            `;
+            Object.keys(data.volumes).forEach(product => {
+                container.innerHTML += `
+                    <div class="input-group flex-col items-start p-2 bg-gray-50 rounded-lg border-none">
+                        <label for="volume-${product.replace(' ', '')}" class="font-semibold text-gray-800">${product}</label>
+                        <input type="number" step="1" min="0" id="volume-${product.replace(' ', '')}" value="${data.volumes[product]}"
+                               oninput="updateVolume('${product}', this.value); calculateProjections();" class="text-right w-full" />
+                        <span class="text-xs text-gray-500 mt-1">Volumes vendus / mois</span>
+                    </div>
+                `;
+            });
+        };
+
+        // Rendre un groupe d'inputs (Prix, Taux, Marge)
+        const renderInputGroup = (offerType, product, offerKey, label, dataKey, isRate = false, unit = '€', isInt = false) => {
+            let targetObject;
             
-            return { cf: marginCF, margin: marginAccumulated, rev: revenue, isUpfront, isTail };
-        }
-
-        /**
-         * Calcule le Cash Flow et le Revenu pour l'Offre 2 (AP) pour un mois (m) donné.
-         * Offre 2 est Marge/Revenu Mensuel.
-         */
-        function calculateOffer2CashFlow(P_active, p) {
-            const marginCF = P_active * p.price2 * p.margin2Rate;
-            const revenue = P_active * p.price2;
+            // Logique pour cibler l'objet de données correct
+            if (offerKey === 'global') {
+                targetObject = data.offers[offerType].global;
+            } else {
+                targetObject = data.offers[offerType][product][offerKey];
+            }
             
-            return { cf: marginCF, margin: marginCF, rev: revenue };
-        }
+            if (!targetObject) return '';
 
+            const currentVal = targetObject[dataKey];
+            const displayVal = isRate ? (currentVal * 100).toFixed(2) : currentVal.toFixed(isInt ? 0 : 2);
+            const inputId = `${offerType}-${product.replace(' ', '')}-${offerKey}-${dataKey}`;
+            const step = isRate ? '0.01' : (isInt ? '1' : '0.01');
 
-        /**
-         * Calcule les flux de trésorerie et les totaux consolidés pour les deux offres.
-         */
-        function runSimulation(data) {
-            // Initialisation des totaux globaux (Non Actualisés)
-            let totalSales1 = 0, totalSales2 = 0;
-            let effectiveClients1 = 0, effectiveClients2 = 0;
-            let totalMargin1 = 0, upfrontMargin1 = 0, tailMargin1 = 0;
-            let totalMargin2 = 0;
-            let totalProfitSharing = 0;
-            let totalWefixRevenue = 0;
+            return `
+                <div class="input-group">
+                    <label for="${inputId}" title="${label}">${label}</label>
+                    <input type="number" step="${step}" min="0" id="${inputId}" value="${displayVal}"
+                           oninput="updateData('${offerType}', '${product}', '${offerKey}', '${dataKey}', ${isRate}, ${isInt}, this.value); calculateProjections();">
+                    <span class="ml-1 text-xs text-gray-400 w-4">${unit === '%' ? '%' : (unit === '€' ? '€' : '')}</span>
+                </div>
+            `;
+        };
 
-            // Initialisation des tableaux de Cash Flow et Revenus Totaux (sur 61 mois, index 0 = M1)
-            let CF1_Margin_Only = new Array(MAX_ANALYSIS_MONTHS).fill(0);
-            let CF_PS = new Array(MAX_ANALYSIS_MONTHS).fill(0);
-            let CF_Wefix = new Array(MAX_ANALYSIS_MONTHS).fill(0);
-            let CF2_Margin_Only = new Array(MAX_ANALYSIS_MONTHS).fill(0);
-            
-            let REV1_total = new Array(MAX_ANALYSIS_MONTHS).fill(0);
-            let REV2_total = new Array(MAX_ANALYSIS_MONTHS).fill(0);
+        // Rendre la carte d'un produit
+        const renderProductCard = (product, offerType) => {
+            const productData = data.offers[offerType][product];
+            if (!productData) return '';
 
-            // Arrays pour Parc Client (Population Active)
-            let Park1_total = new Array(MAX_ANALYSIS_MONTHS).fill(0);
-            let Park2_total = new Array(MAX_ANALYSIS_MONTHS).fill(0);
-            
-            // Les taux d'attrition ne sont plus globaux mais lus dans le loop de produit.
+            let html = `
+                <div class="bg-white p-4 rounded-xl shadow-sm space-y-4 border border-gray-200">
+                    <h3 class="text-lg font-bold text-gray-700">${product}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            `;
 
-            // BOUCLE PRINCIPALE SUR TOUTES LES FAMILLES DE PRODUITS
-            data.products.forEach((p, index) => {
-                // VARIABLES D'ATTRITION SPÉCIFIQUES AU PRODUIT
-                const MAX_LIFE_1 = p.avgContractLife1;
-                const MAX_LIFE_2 = p.avgContractLife2;
-                const C1_monthly_rate = p.churnRate1;
-                const C2_monthly_rate = p.churnRate2;
-
-                // --- Calcul des Clients par cohorte mensuelle (base) ---
-                const N1_cohort_brut = p.volume * p.ta1; 
-                const N_eff1_cohort = N1_cohort_brut * (1 - p.renunciationRate1); // Utilise le taux de renonciation du produit
+            Object.entries(productData).forEach(([offerKey, offerDetails]) => {
+                const isMonthly = offerKey.includes('monthly');
+                const duration = offerDetails.duration_months || offerDetails.commitment_months || 0;
+                let title = isMonthly
+                    ? `Abonnement Mensuel (${duration} M)`
+                    : `Offre Prépayée (${duration} M)`;
                 
-                const N2_cohort_brut = p.volume * p.ta2; 
-                const N_eff2_cohort = N2_cohort_brut * (1 - p.renunciationRate2); // Utilise le taux de renonciation du produit
-                
-                const PS_cohort = N1_cohort_brut * data.profitSharingUnit;
+                // Correction pour l'affichage des MacBook AP
+                if (offerType === 'AP' && product === 'MacBook') {
+                    if(offerKey.includes('12m')) title = 'Offre Prépayée (12 M)';
+                    if(offerKey.includes('36m')) title = 'Offre Prépayée (36 M)';
+                }
 
-                // --- BOUCLE SUR LES 48 COHORTES (k = mois de vente, de 0 à 47) ---
-                for (let k = 0; k < MAX_SALES_MONTHS; k++) {
-                    
-                    // Accumulation des totaux bruts
-                    totalSales1 += N1_cohort_brut;
-                    totalSales2 += N2_cohort_brut;
-                    effectiveClients1 += N_eff1_cohort;
-                    effectiveClients2 += N_eff2_cohort;
-                    totalProfitSharing += PS_cohort;
-                    
-                    let wefixRevenue_cohort = 0; 
-                    if (index === 0) { // Uniquement pour iPhones (index 0)
-                        const N_wefix_effective = N_eff1_cohort * data.wefixRate;
-                        wefixRevenue_cohort = N_wefix_effective * data.wefixPrice;
-                        totalWefixRevenue += wefixRevenue_cohort;
+
+                html += `
+                    <div class="${isMonthly ? 'monthly-card' : 'prepaid-card'} p-3 rounded-lg bg-gray-50 shadow-inner">
+                        <h4 class="font-semibold text-sm ${isMonthly ? 'text-monthly' : 'text-prepaid'} mb-2 border-b border-gray-200 pb-1">${title}</h4>
+                `;
+
+                // Attachement
+                html += renderInputGroup(offerType, product, offerKey, 'Taux d’Attachement', 'attachment_rate', true, '%');
+
+                // Variables communes (Prix, Marge)
+                html += renderInputGroup(offerType, product, offerKey, isMonthly ? 'Prix TTC / Mois' : 'Prix TTC (Total)', 'price_ttc', false, '€');
+                html += renderInputGroup(offerType, product, offerKey, 'Taux de Marge', 'margin_rate', true, '%');
+
+                // Variables spécifiques (Mensuel)
+                if (isMonthly) {
+                    html += renderInputGroup(offerType, product, offerKey, 'Durée Max du Contrat (mois)', 'max_duration_months', false, 'M', true);
+                    html += renderInputGroup(offerType, product, offerKey, 'Taux Renonciation (60 jours)', 'renunciation_rate', true, '%');
+                    html += renderInputGroup(offerType, product, offerKey, 'Taux Churn Mensuel (dès M13)', 'churn_monthly', true, '%');
+
+                    // Spécifique iPhones AS (X-Force)
+                    if (offerType === 'AS' && product === 'iPhones') {
+                        html += `<div class="p-2 mt-2 border-t border-red-200 space-y-2">
+                            <h5 class="font-bold text-xs text-xforce">Revenus Complémentaires X-Force (M0)</h5>
+                            ${renderInputGroup(offerType, product, 'global', 'Taux de Pose du Film', 'xforce_rate', true, '%')}
+                            ${renderInputGroup(offerType, product, 'global', 'Revenu Unitaire (Film)', 'xforce_revenue', false, '€')}
+                        </div>`;
                     }
+                }
 
+                html += `</div>`;
+            });
 
-                    // --- BOUCLE SUR LA VIE DE LA COHORTE (m = mois d'abonnement, de 0 à MAX) ---
-                    for (let m = 0; m < MAX_LIFE_1 || m < MAX_LIFE_2; m++) {
-                        const t_analysis = k + m; // Index du mois dans le tableau global (M1=0)
-                        if (t_analysis >= MAX_ANALYSIS_MONTHS) break;
-                        
-                        // --- OFFRE 1 (AS) ---
-                        if (m < MAX_LIFE_1) {
-                            const P_active_1 = calculateActivePopulation(m, N1_cohort_brut, N_eff1_cohort, C1_monthly_rate, MAX_LIFE_1);
-                            
-                            if (P_active_1 > 0) {
-                                // Accumulation du Parc Client
-                                Park1_total[t_analysis] += P_active_1;
-                                
-                                // Calcul des flux spécifiques à l'Offre 1 (Marge/Revenu)
-                                const { cf: marginCF, margin: marginAcc, rev: revenue, isUpfront, isTail } = 
-                                    calculateOffer1CashFlow(m, N1_cohort_brut, N_eff1_cohort, p, wefixRevenue_cohort);
-                                
-                                if(marginCF > 0) {
-                                    CF1_Margin_Only[t_analysis] += marginCF;
-                                    REV1_total[t_analysis] += revenue;
-                                    totalMargin1 += marginAcc;
-                                    if (isUpfront) upfrontMargin1 += marginAcc;
-                                    if (isTail) tailMargin1 += marginAcc;
-                                }
+            html += `</div></div>`;
+            return html;
+        };
 
-                                if (m === 0) { // M1: Ajout de PS et Wefix
-                                    CF_PS[t_analysis] += PS_cohort;
-                                    CF_Wefix[t_analysis] += wefixRevenue_cohort;
-                                }
-                            }
-                        }
-
-                        // --- OFFRE 2 (AP) ---
-                        if (m < MAX_LIFE_2) {
-                            const P_active_2 = calculateActivePopulation(m, N2_cohort_brut, N_eff2_cohort, C2_monthly_rate, MAX_LIFE_2);
-                            
-                            if (P_active_2 > 0) {
-                                // Accumulation du Parc Client
-                                Park2_total[t_analysis] += P_active_2;
-                                
-                                // Calcul des flux (Mensuel)
-                                const { cf: marginCF, margin: marginAcc, rev: revenue } = calculateOffer2CashFlow(P_active_2, p);
-                                
-                                CF2_Margin_Only[t_analysis] += marginCF;
-                                REV2_total[t_analysis] += revenue;
-                                totalMargin2 += marginAcc;
-                            }
-                        }
-                    }
+        // Rendre les sections d'input pour les produits
+        const renderProductInputs = () => {
+            const container = document.getElementById('product-inputs');
+            let html = '';
+            
+            // 1. Rendu des cartes de produits pour l'onglet actif
+            Object.keys(data.volumes).forEach(product => {
+                if (data.offers[activeOfferTab][product]) {
+                    html += renderProductCard(product, activeOfferTab);
                 }
             });
 
-            // --- Calculs finaux Globaux ---
-            const CF1_Total_Combined = CF1_Margin_Only.map((v, i) => v + CF_PS[i] + CF_Wefix[i]);
-            
-            const totalNetGain1 = totalMargin1 + totalProfitSharing + totalWefixRevenue;
-            const totalNetGain2 = totalMargin2;
-            
-            const totalNPV1 = calculateNPV(CF1_Total_Combined, data.monthlyRate);
-            const totalNPV2 = calculateNPV(CF2_Margin_Only, data.monthlyRate);
-
-            return {
-                totalSales1, totalSales2, effectiveClients1, effectiveClients2,
-                totalMargin1, upfrontMargin1, tailMargin1, totalMargin2,
-                totalProfitSharing, totalWefixRevenue, totalNetGain1, totalNetGain2,
-                totalNPV1, totalNPV2, 
-                CF1_Margin_Only, CF_PS, CF_Wefix, CF1_Total_Combined, CF2_Margin_Only,
-                REV1_total, REV2_total,
-                Park1_total, Park2_total
-            };
-        }
-
-
-        /**
-         * Calcule les totaux cumulés (Gain Net) jusqu'à un mois donné (M1 à M_N).
-         */
-        function getCumulativeResults(cfArray, upToMonthIndex) {
-            let cumulativeNetGain = 0;
-            
-            for (let t = 0; t <= upToMonthIndex; t++) {
-                cumulativeNetGain += cfArray[t] || 0;
-            }
-            return cumulativeNetGain;
-        }
-
-        /**
-         * Calcule les totaux annuels (non actualisés) pour le Cash Flow Détaillé (A1 à A4).
-         */
-        function calculateAnnualTotals(cfArray) {
-            const annualTotals = {};
-            for (let y = 1; y <= 4; y++) {
-                let sum = 0;
-                const startIdx = (y - 1) * 12; 
-                const endIdx = startIdx + 11;
-                
-                for (let i = startIdx; i <= endIdx && i < MAX_SALES_MONTHS; i++) {
-                    sum += cfArray[i] || 0;
-                }
-                annualTotals[`A${y}`] = sum;
-            }
-            return annualTotals;
-        }
-
-        /**
-         * Génère le HTML pour une table de détail (CF, Revenu, ou Parc).
-         */
-        function generateDetailTable(title, rowsData, monthlyRate, showNPV) {
-            
-            // DÉFINITION DE L'UNITÉ
-            const isCurrency = rowsData.length > 0 ? rowsData[0].isCurrency : true;
-            const formatter = isCurrency ? (val, dec=0) => formatCurrency(val, dec) : (val, dec=0) => formatNumber(val, dec);
-            const unit = isCurrency ? '€' : 'Nb';
-
-            // En-têtes de mois M1...M61
-            const monthHeaders = Array.from({ length: MAX_ANALYSIS_MONTHS }, (_, i) => {
-                const month = i + 1;
-                let className = '';
-                if (month % 12 === 0) {
-                    className = 'bg-gray-200 font-bold';
-                }
-                return `<th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase ${className} cf-total-cell">M${month}</th>`;
-            }).join('');
-
-            // Génération des lignes de données
-            const tableRows = rowsData.map(row => {
-                const { title, cf, bgColor, isCurrency } = row;
-                
-                const annualTotals = calculateAnnualTotals(cf);
-                const npv = showNPV ? calculateNPV(cf, monthlyRate) : 0;
-
-                // Cellules des 61 mois
-                const cfCells = cf.map((val, i) => {
-                    const month = i + 1;
-                    let className = '';
-                    if (month % 12 === 0) {
-                        className = (bgColor.includes('blue') || bgColor.includes('purple') || bgColor.includes('red')) ? 'bg-blue-200' : 'bg-green-200';
-                        if (bgColor.includes('font-bold')) className += ' font-bold';
-                    }
-                    return `<td class="px-2 py-2 text-sm text-gray-900 font-medium ${className} cf-total-cell">${formatter(val, 0)}</td>`;
-                }).join('');
-                
-                // Cellules des 4 totaux annuels
-                const annualCells = `<td class="px-2 py-2 text-sm text-gray-900 font-extrabold bg-gray-300 cf-total-cell">${formatter(annualTotals.A1, 0)}</td>` +
-                                    `<td class="px-2 py-2 text-sm text-gray-900 font-extrabold bg-gray-300 cf-total-cell">${formatter(annualTotals.A2, 0)}</td>` +
-                                    `<td class="px-2 py-2 text-sm text-gray-900 font-extrabold bg-gray-300 cf-total-cell">${formatter(annualTotals.A3, 0)}</td>` +
-                                    `<td class="px-2 py-2 text-sm text-gray-900 font-extrabold bg-gray-300 border-r border-gray-400 cf-total-cell">${formatter(annualTotals.A4, 0)}</td>`;
-                
-                // Cellule NPV (si activée)
-                const npvCell = showNPV ? `<td class="px-3 py-2 text-sm font-bold text-gray-900 bg-gray-100">${formatter(npv, 2)}</td>` : '';
-                
-                return `
-                    <tr class="${bgColor}">
-                        <td class="px-3 py-2 whitespace-nowrap text-sm font-semibold text-gray-900 sticky-col-detail ${bgColor}">${title}</td>
-                        ${annualCells}
-                        ${cfCells}
-                        ${npvCell}
-                    </tr>
+            // 2. Ajout du Profit Sharing (AS - Annuel) seulement si l'onglet AS est actif
+            if (activeOfferTab === 'AS') {
+                html += `
+                    <div class="mt-6 bg-white p-6 rounded-xl shadow-md border-t-4 border-f97316">
+                        <h3 class="text-lg font-bold text-gray-700 text-profit mb-4">PROPOSITION 1 (AS) - Profit Sharing Annuel</h3>
+                        <p class="text-sm text-gray-500 mb-4">Ces montants s'ajoutent aux gains totaux de l'année concernée.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            ${[1, 2, 3, 4].map(y => `
+                                <div class="bg-gray-50 p-3 rounded-lg">
+                                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Année ${y}</h4>
+                                    ${renderInputGroup('AS', 'global', 'global', `Montant (€)`, `profitSharing_A${y}`, false, '€', false)}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
                 `;
-            }).join('');
+            }
+            container.innerHTML = html;
+        };
 
-            // HTML de la table complète
-            const npvHeader = showNPV ? `<th class="px-3 py-2 text-center text-xs font-bold text-gray-800 uppercase bg-gray-100">TOTAL VAN (M1-M61)</th>` : '';
-            const npvSubHeader = showNPV ? `<th class="px-3 py-2 text-center text-xs font-bold text-gray-800 uppercase bg-gray-100 border-t border-gray-200">NPV</th>` : '';
+        // Rendre le tableau de synthèse des résultats
+        const renderResultsSummary = (offerType, results) => {
+            const offerName = offerType === 'AS' ? 'PROPOSITION 1 (AS)' : 'PROPOSITION 2 (AP)';
+            const colorClass = offerType === 'AS' ? 'text-blue-700' : 'text-green-700';
+            const borderColor = offerType === 'AS' ? 'border-blue-500' : 'border-green-500';
+            const bgColorClass = offerType === 'AS' ? 'bg-blue-50' : 'bg-green-50';
 
-            return `
-                <div class="space-y-4 p-4">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <!-- Ligne 1: Titre Principal -->
-                            <tr>
-                                <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase sticky-col-detail">Détail (${unit})</th>
-                                <th colspan="4" class="px-3 py-2 text-center text-xs font-bold text-gray-800 uppercase bg-gray-300 border-r border-gray-400">TOTAL ANNÉE (Non Actualisé)</th>
-                                ${monthHeaders}
-                                ${npvHeader}
-                            </tr>
-                            <!-- Ligne 2: Sous-Titres Annuels -->
-                            <tr>
-                                <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase sticky-col-detail border-t border-gray-200"></th>
-                                <th class="px-2 py-2 text-center text-xs font-bold text-gray-800 uppercase bg-gray-300">A1</th>
-                                <th class="px-2 py-2 text-center text-xs font-bold text-gray-800 uppercase bg-gray-300">A2</th>
-                                <th class="px-2 py-2 text-center text-xs font-bold text-gray-800 uppercase bg-gray-300">A3</th>
-                                <th class="px-2 py-2 text-center text-xs font-bold text-gray-800 uppercase bg-gray-300 border-r border-gray-400">A4</th>
-                                ${monthHeaders}
-                                ${npvSubHeader}
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            ${tableRows}
-                        </tbody>
-                    </table>
+            let html = `
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-8 ${borderColor}">
+                    <h3 class="text-xl font-bold mb-4 ${colorClass}">${offerName}</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="${bgColorClass}">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenu</th>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Année ${i + 1}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-monthly font-semibold">Total Précompte / Marge Mensuelle</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].monthly.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                </tr>
+                                <tr>
+                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-prepaid font-semibold">Total Prépayés</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].prepaid.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                </tr>
+                                ${offerType === 'AS' ? `
+                                <tr>
+                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-xforce font-semibold">Total Revenus X-Force (iPhones)</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].xforce.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                </tr>
+                                <tr>
+                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-profit font-semibold">Profit Sharing (Annuel)</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-sm">${results[i].profitSharing.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                </tr>
+                                ` : ''}
+                                <tr class="border-t-2 border-gray-400 font-extrabold">
+                                    <td class="px-3 py-2 whitespace-nowrap text-base ${colorClass}">TOTAL ANNUEL</td>
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-3 py-2 text-base ${colorClass}">${results[i].total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</td>`).join('')}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 p-3 ${bgColorClass} rounded-lg">
+                        <p class="text-lg font-bold ${colorClass}">Total sur 4 Ans : ${results.total_4_years.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</p>
+                    </div>
                 </div>
             `;
-        }
-        
-        /**
-         * Met à jour les 3 tables de détail (Parc, Revenu, CF)
-         */
-        function updateAllDetailTables(results, inputs) {
-            
-            // 1. Tableau du Parc Client
-            const parkRows = [
-                { title: "Parc Actif Offre 1 (AS)", cf: results.Park1_total, bgColor: "bg-blue-50", isCurrency: false },
-                { title: "Parc Actif Offre 2 (AP)", cf: results.Park2_total, bgColor: "bg-green-50", isCurrency: false }
-            ];
-            document.getElementById('clientParkDetail').innerHTML = generateDetailTable(
-                "Suivi du Parc Client Actif (Nombre de clients)", parkRows, inputs.monthlyRate, false
-            );
-
-            // 2. Tableau des Revenus
-            const revenueRows = [
-                { title: "Revenus Offre 1 (AS)", cf: results.REV1_total, bgColor: "bg-blue-50", isCurrency: true },
-                { title: "Revenus Offre 2 (AP)", cf: results.REV2_total, bgColor: "bg-green-50", isCurrency: true }
-            ];
-            document.getElementById('revenueDetail').innerHTML = generateDetailTable(
-                "Analyse des Revenus (Non Actualisés)", revenueRows, inputs.monthlyRate, false
-            );
-
-            // 3. Tableau des Cash Flow (Marge Nette)
-            const cashFlowRows = [
-                { title: "Marge Nette Offre 1 (AS)", cf: results.CF1_Margin_Only, bgColor: "bg-blue-50", isCurrency: true },
-                { title: "Profit Sharing (AS)", cf: results.CF_PS, bgColor: "bg-purple-50", isCurrency: true },
-                { title: "Revenus Wefix (AS)", cf: results.CF_Wefix, bgColor: "bg-red-50", isCurrency: true },
-                { title: "CF Total Offre 1 (AS)", cf: results.CF1_Total_Combined, bgColor: "bg-blue-100 font-bold", isCurrency: true },
-                { title: "CF Total Offre 2 (AP)", cf: results.CF2_Margin_Only, bgColor: "bg-green-100 font-bold", isCurrency: true }
-            ];
-            document.getElementById('cashFlowDetail').innerHTML = generateDetailTable(
-                "Analyse de la Marge Nette et des Flux (Cash Flow)", cashFlowRows, inputs.monthlyRate, true
-            );
-        }
+            return html;
+        };
 
 
-        /**
-         * Met à jour tous les éléments d'affichage des résultats (Totaux et Cumulés).
-         */
-        function updateUI(results, inputs) {
-            
-            // Calcul des résultats cumulés par année (Gain Net Non Actualisé)
-            const year1_1 = getCumulativeResults(results.CF1_Total_Combined, 11);
-            const year2_1 = getCumulativeResults(results.CF1_Total_Combined, 23);
-            const year3_1 = getCumulativeResults(results.CF1_Total_Combined, 35);
-            const year4_1 = getCumulativeResults(results.CF1_Total_Combined, 47);
-            
-            const year1_2 = getCumulativeResults(results.CF2_Margin_Only, 11);
-            const year2_2 = getCumulativeResults(results.CF2_Margin_Only, 23);
-            const year3_2 = getCumulativeResults(results.CF2_Margin_Only, 35);
-            const year4_2 = getCumulativeResults(results.CF2_Margin_Only, 47);
+        // --- Fonctions de mise à jour des données ---
 
+        // Mise à jour des volumes globaux
+        const updateVolume = (product, value) => {
+            const num = parseFloat(value.replace(/[^0-9,.-]/g, '').replace(',', '.'));
+            data.volumes[product] = isNaN(num) ? 0 : num;
+        };
 
-            // --- OFFRE 1 (AS) ---
-            document.getElementById('totalSales1').textContent = formatNumber(results.totalSales1, 0);
-            document.getElementById('effectiveClients1').textContent = formatNumber(results.effectiveClients1, 0);
-            document.getElementById('totalMargin1').textContent = formatCurrency(results.totalMargin1);
-            document.getElementById('upfrontMargin1').textContent = formatCurrency(results.upfrontMargin1);
-            document.getElementById('tailMargin1').textContent = formatCurrency(results.tailMargin1);
-            document.getElementById('totalProfitSharing').textContent = formatCurrency(results.totalProfitSharing);
-            document.getElementById('totalWefixRevenue').textContent = formatCurrency(results.totalWefixRevenue); 
-            document.getElementById('totalNetGain1').textContent = formatCurrency(results.totalNetGain1);
-            document.getElementById('initialCashIn1').textContent = formatCurrency(results.CF1_Total_Combined[0]); 
-            document.getElementById('totalNPV1').textContent = formatCurrency(results.totalNPV1);
-
-            document.getElementById('cumulGain1_1').textContent = formatCurrency(year1_1);
-            document.getElementById('cumulGain1_2').textContent = formatCurrency(year2_1);
-            document.getElementById('cumulGain1_3').textContent = formatCurrency(year3_1);
-            document.getElementById('cumulGain1_4').textContent = formatCurrency(year4_1);
-
-
-            // --- OFFRE 2 (AP) ---
-            document.getElementById('totalSales2').textContent = formatNumber(results.totalSales2, 0);
-            document.getElementById('effectiveClients2').textContent = formatNumber(results.effectiveClients2, 0);
-            document.getElementById('totalMargin2').textContent = formatCurrency(results.totalMargin2);
-            document.getElementById('totalNetGain2').textContent = formatCurrency(results.totalNetGain2);
-            document.getElementById('initialCashIn2').textContent = formatCurrency(results.CF2_Margin_Only[0]);
-            document.getElementById('totalNPV2').textContent = formatCurrency(results.totalNPV2);
-            
-            document.getElementById('cumulGain2_1').textContent = formatCurrency(year1_2);
-            document.getElementById('cumulGain2_2').textContent = formatCurrency(year2_2);
-            document.getElementById('cumulGain2_3').textContent = formatCurrency(year3_2);
-            document.getElementById('cumulGain2_4').textContent = formatCurrency(year4_2);
-            
-            // Mise à jour des 3 tables de détail
-            updateAllDetailTables(results, inputs);
-
-            // Mise à jour dynamique du texte de description du parc client (retiré les variables globales)
-            const parkDescriptionP = document.getElementById('parkDescription');
-            if (parkDescriptionP) {
-                parkDescriptionP.textContent = `
-                    Simulation du nombre total de clients actifs chaque mois, en tenant compte des nouvelles ventes,
-                    de la renonciation (M3), du churn mensuel exponentiel (M13) et de la fin de vie. 
-                    Les variables d'attrition sont définies individuellement pour chaque Famille de Produit.
-                `;
-            }
-
-            // --- SYNTHÈSE VAN (Avec Différence) ---
-            const vanWinnerMessage = document.getElementById('vanWinnerMessage');
-            const vanDifferenceDisplay = document.getElementById('vanDifference');
-            vanWinnerMessage.classList.remove('text-green-300', 'text-red-300', 'text-yellow-300');
-            vanDifferenceDisplay.classList.remove('text-green-300', 'text-red-300');
-            vanDifferenceDisplay.textContent = "";
-
-            if (results.totalNPV1 > results.totalNPV2) {
-                const diff = results.totalNPV1 - results.totalNPV2;
-                vanWinnerMessage.textContent = `L'Offre 1 (AS) est plus rentable.`;
-                vanWinnerMessage.classList.add('text-green-300');
-                vanDifferenceDisplay.textContent = `Avantage de l'Offre 1 : ${formatCurrency(diff)} en VAN.`;
-                vanDifferenceDisplay.classList.add('text-green-300');
-            } else if (results.totalNPV2 > results.totalNPV1) {
-                const diff = results.totalNPV2 - results.totalNPV1;
-                vanWinnerMessage.textContent = `L'Offre 2 (AP) est plus rentable.`;
-                vanWinnerMessage.classList.add('text-red-300');
-                vanDifferenceDisplay.textContent = `Avantage de l'Offre 2 : ${formatCurrency(diff)} en VAN.`;
-                vanDifferenceDisplay.classList.add('text-red-300');
-            } else if (results.totalNPV1 > 0) {
-                vanWinnerMessage.textContent = "Les deux offres ont une VAN équivalente.";
-                vanWinnerMessage.classList.add('text-yellow-300');
+        // Mise à jour des autres variables
+        const updateData = (offerType, product, offerKey, dataKey, isRate, isInt, value) => {
+            let num;
+            if (value !== undefined) {
+                num = parseFloat(value.replace(/[^0-9,.-]/g, '').replace(',', '.'));
             } else {
-                 vanWinnerMessage.textContent = "Veuillez effectuer le calcul.";
-                 vanWinnerMessage.classList.add('text-yellow-300');
+                num = getInputValue(`${offerType}-${product.replace(' ', '')}-${offerKey}-${dataKey}`, isRate, isInt);
             }
-        }
 
+            if (isNaN(num)) num = 0;
 
-        /**
-         * Fonction pour insérer la configuration produit dans le tableau HTML
-         */
-        function setupProductConfig() {
-            const container = document.getElementById('productConfig');
-            container.innerHTML = products.map((p, index) => `
-                <tr class="hover:bg-gray-100">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky-col border-r border-gray-300">
-                        ${p.name}
-                        ${index === 0 ? '<span title="Le revenu Wefix est uniquement calculé sur les ventes d\'iPhones pour l\'Offre 1." class="text-xs font-bold text-red-500 ml-1">(Wefix)</span>' : ''}
-                    </td>
-                    <td class="p-2">
-                        <input type="number" id="volume_${index}" value="${p.volume}" min="1" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    
-                    <!-- OFFRE 1 - Finance -->
-                    <td class="p-2 bg-blue-50 border-l border-r border-blue-200">
-                        <input type="number" id="price1_${index}" value="${p.price1}" min="0.01" step="0.01" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    <td class="p-2 bg-blue-50 border-r border-blue-200">
-                        <input type="number" id="margin1_${index}" value="${p.margin1}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    <td class="p-2 bg-blue-50 border-r border-blue-200">
-                        <input type="number" id="ta1_${index}" value="${p.ta1}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    
-                    <!-- OFFRE 1 - Attrition (NOUVEAU) -->
-                    <td class="p-2 bg-blue-50 border-r border-blue-200">
-                        <input type="number" id="renunciation1_${index}" value="${p.r1}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    <td class="p-2 bg-blue-50 border-r border-blue-200">
-                        <input type="number" id="churn1_${index}" value="${p.c1}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    <td class="p-2 bg-blue-50 border-r border-gray-200">
-                        <input type="number" id="life1_${index}" value="${p.l1}" min="1" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-
-                    <!-- OFFRE 2 - Finance -->
-                    <td class="p-2 bg-green-50 border-l border-r border-green-200">
-                        <input type="number" id="price2_${index}" value="${p.price2}" min="0.01" step="0.01" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    <td class="p-2 bg-green-50 border-r border-green-200">
-                        <input type="number" id="margin2_${index}" value="${p.margin2}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    <td class="p-2 bg-green-50 border-r border-green-200">
-                        <input type="number" id="ta2_${index}" value="${p.ta2}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    
-                    <!-- OFFRE 2 - Attrition (NOUVEAU) -->
-                    <td class="p-2 bg-green-50 border-r border-green-200">
-                        <input type="number" id="renunciation2_${index}" value="${p.r2}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    <td class="p-2 bg-green-50 border-r border-green-200">
-                        <input type="number" id="churn2_${index}" value="${p.c2}" min="0" max="100" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                    <td class="p-2 bg-green-50">
-                        <input type="number" id="life2_${index}" value="${p.l2}" min="1" class="product-input w-full text-center p-1 border rounded" oninput="calculate()">
-                    </td>
-                </tr>
-            `).join('');
-        }
-        
-        /**
-         * Déclenche la fenêtre d'impression (pour générer un PDF).
-         */
-        function printSummary() {
-            // Affiche un message pour guider l'utilisateur
-            console.log("Déclenchement de la boîte de dialogue d'impression. Veuillez choisir 'Enregistrer au format PDF' comme destination.");
-            // Déclenche l'impression native du navigateur
-            window.print();
-        }
-
-        /**
-         * Fonction principale orchestrant le flux de calcul.
-         */
-        function calculate() {
-            try {
-                const inputs = getInputs();
-                const results = runSimulation(inputs);
-                updateUI(results, inputs);
-            } catch (error) {
-                console.error("Erreur lors du calcul :", error);
+            if (dataKey.startsWith('profitSharing')) {
+                // Cas spécifique du Profit Sharing global
+                data.offers[offerType].global[dataKey] = num;
+            } else if (dataKey === 'xforce_rate' || dataKey === 'xforce_revenue' || dataKey === 'tax_rate') {
+                 // Cas spécifique X-Force et Taux Fiscal
+                data.offers[offerType].global[dataKey] = isRate ? num / 100 : num;
             }
-        }
-
-
-        // Initialisation à l'ouverture de la page
-        window.onload = function() {
-            setupProductConfig();
-            calculate(); // Exécute le calcul initial avec les valeurs par défaut
-
-            // Attache l'écouteur d'événement pour le bouton de téléchargement PDF
-            const downloadButton = document.getElementById('downloadPdfButton');
-            if (downloadButton) {
-                downloadButton.addEventListener('click', printSummary);
+            else {
+                // Cas standard
+                data.offers[offerType][product][offerKey][dataKey] = isRate ? num / 100 : num;
             }
         };
+
+
+        // --- Fonction de calcul principal ---
+
+        const calculateProjections = () => {
+            const results = { AS: [], AP: [] };
+
+            // Initialiser les résultats annuels
+            for (let i = 0; i < NB_YEARS; i++) {
+                results.AS.push({ monthly: 0, prepaid: 0, xforce: 0, profitSharing: 0, total: 0 });
+                results.AP.push({ monthly: 0, prepaid: 0, xforce: 0, profitSharing: 0, total: 0 });
+            }
+
+            const productKeys = Object.keys(data.volumes);
+
+            // Boucle sur les 48 mois (M0 à M47)
+            for (let m = 0; m < TOTAL_MONTHS; m++) {
+                const yearIndex = Math.floor(m / MONTHS_PER_YEAR); // 0, 1, 2, 3
+                const monthInYear = m % MONTHS_PER_YEAR; // 0 à 11
+
+                // Calcul du Profit Sharing (Annuel, ajouté une seule fois par an)
+                if (monthInYear === 0) {
+                    const ps_key = `profitSharing_A${yearIndex + 1}`;
+                    results.AS[yearIndex].profitSharing += data.offers.AS.global[ps_key] || 0;
+                }
+
+                productKeys.forEach(product => {
+                    const volumeMensuel = data.volumes[product];
+
+                    ['AS', 'AP'].forEach(offerType => {
+                        const offerData = data.offers[offerType];
+                        const taxRate = offerData.global.tax_rate;
+                        const productOfferData = offerData[product];
+                        if (!productOfferData) return; // Skip if product not offered by this partner
+
+                        Object.entries(productOfferData).forEach(([offerKey, offerDetails]) => {
+                            const isMonthly = offerKey.includes('monthly');
+                            const isPrepaid = offerKey.includes('prepaid');
+
+                            const attachmentRate = offerDetails.attachment_rate;
+                            const marginRate = offerDetails.margin_rate;
+                            const priceTTC = offerDetails.price_ttc;
+                            const salesVolume = volumeMensuel * attachmentRate; // Volume de vente en M0
+
+                            const priceHT = priceTTC / (1 + taxRate);
+                            const unitMargin = priceHT * marginRate;
+
+                            if (salesVolume === 0 || unitMargin === 0) return;
+
+                            // --------------------------------------------------------
+                            // A. Traitement des ventes en M0 (dans le mois en cours 'm')
+                            // --------------------------------------------------------
+
+                            if (isPrepaid) {
+                                // Offres Prépayées (AS et AP) : Marge versée en M0 (mois 'm')
+                                results[offerType][yearIndex].prepaid += salesVolume * unitMargin;
+                            } else if (isMonthly) {
+                                // Offres Mensuelles
+
+                                if (offerType === 'AS') {
+                                    // AS Mensuel : 12 mois de précompte en M0 (mois 'm')
+                                    const precompte = salesVolume * unitMargin * 12;
+                                    results.AS[yearIndex].monthly += precompte;
+
+                                    // Revenu X-Force (AS, iPhones, M0)
+                                    if (product === 'iPhones') {
+                                        const xforceRate = offerData.global.xforce_rate;
+                                        const xforceRevenue = offerData.global.xforce_revenue;
+                                        const revenueXForce = salesVolume * xforceRate * (xforceRevenue / (1 + taxRate));
+                                        results.AS[yearIndex].xforce += revenueXForce;
+                                    }
+
+                                    // Reprise de commission (Clawback) en M+2 (mois m+2)
+                                    const clawbackMonth = m + 2;
+                                    if (clawbackMonth < TOTAL_MONTHS) {
+                                        const clawbackYearIndex = Math.floor(clawbackMonth / MONTHS_PER_YEAR);
+                                        const renunciationRate = offerDetails.renunciation_rate;
+                                        const volumeClawback = salesVolume * Math.max(0, renunciationRate - 0.15);
+                                        const repriseAmount = volumeClawback * unitMargin * 12; // Reprise sur 12 mois
+                                        results.AS[clawbackYearIndex].monthly -= repriseAmount;
+                                    }
+                                }
+                                // AP Mensuel : Pas de précompte en M0
+                            }
+
+                            // --------------------------------------------------------
+                            // B. Traitement du parc client (pour les mois futurs)
+                            // --------------------------------------------------------
+
+                            if (isMonthly) {
+                                const renunciationRate = offerDetails.renunciation_rate;
+                                const churnRate = offerDetails.churn_monthly;
+                                const maxDuration = offerDetails.max_duration_months;
+                                let activePark = salesVolume; // Parc initial
+
+                                // Boucle sur les mois suivants la vente (m+1 à TOTAL_MONTHS-1)
+                                for (let k = m + 1; k < TOTAL_MONTHS; k++) {
+                                    const parkYearIndex = Math.floor(k / MONTHS_PER_YEAR);
+
+                                    // 1. Durée de vie maximale : Si le mois de vie du contrat dépasse la durée max, le parc tombe à zéro
+                                    if (k >= m + maxDuration) {
+                                        activePark = 0;
+                                        break;
+                                    }
+
+                                    // 2. Décroissance du parc liée à la renonciation (après M0, si pas déjà appliqué)
+                                    if (k === m + 1) { // M+1 (M1)
+                                        // La renonciation initiale réduit le parc pour les calculs de marge mensuelle et churn
+                                        activePark = salesVolume * (1 - renunciationRate);
+                                    }
+
+                                    // 3. Décroissance du parc liée au Churn (dès M13)
+                                    if (k >= m + 13) {
+                                        activePark *= (1 - churnRate);
+                                    }
+
+                                    // Application de la Marge Mensuelle
+                                    if (activePark > 0) {
+                                        if (offerType === 'AS') {
+                                            // AS: Revenu à partir de M13 uniquement
+                                            if (k >= m + 12) {
+                                                results.AS[parkYearIndex].monthly += activePark * unitMargin;
+                                            }
+                                        } else if (offerType === 'AP') {
+                                            // AP: Revenu à partir de M1
+                                            results.AP[parkYearIndex].monthly += activePark * unitMargin;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    });
+                });
+            }
+
+            // Agrégation des totaux annuels et totaux 4 ans
+            ['AS', 'AP'].forEach(offerType => {
+                let total4Years = 0;
+                results[offerType].forEach(year => {
+                    // S'assurer que les valeurs sont traitées en tant que nombres et gèrent les NaN
+                    year.monthly = parseFloat(year.monthly.toFixed(2)) || 0;
+                    year.prepaid = parseFloat(year.prepaid.toFixed(2)) || 0;
+                    year.xforce = parseFloat(year.xforce.toFixed(2)) || 0;
+                    year.profitSharing = parseFloat(year.profitSharing.toFixed(2)) || 0;
+
+                    year.total = year.monthly + year.prepaid + year.xforce + year.profitSharing;
+                    total4Years += year.total;
+                });
+                results[offerType].total_4_years = total4Years;
+            });
+
+            // Affichage des résultats
+            document.getElementById('results-summary').innerHTML =
+                renderResultsSummary('AS', results.AS) +
+                renderResultsSummary('AP', results.AP);
+        };
+
+        // Fonction d'initialisation
+        const init = () => {
+            // S'assurer que les valeurs numériques initiales sont des nombres
+            Object.keys(data.volumes).forEach(product => {
+                data.volumes[product] = parseInt(data.volumes[product]);
+            });
+
+            // Rendre l'interface
+            renderGlobalVolumes();
+            // Lancer le rendu initial avec l'onglet AS
+            renderProductInputs();
+
+            // Lancer le premier calcul
+            calculateProjections();
+        };
+
+        // Lancer l'initialisation
+        window.onload = init;
     </script>
+
 </body>
 </html>
