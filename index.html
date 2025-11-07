@@ -137,6 +137,9 @@
     <script>
         // Taux de TVA par défaut (utilisé pour convertir TTC en HT)
         const TVA_RATE = 0.20; // 20%
+        // Nouveau : Taux de Taxe sur les Conventions d'Assurance (TCA)
+        const TCA_RATE = 0.09; // 9%
+
         const NB_YEARS = 4;
         const MONTHS_PER_YEAR = 12;
         const TOTAL_MONTHS = NB_YEARS * MONTHS_PER_YEAR;
@@ -173,12 +176,7 @@
                             max_duration_months: 48, // Durée de vie maximale (4 ans)
                             commitment_months: 12, // Engagement 12 mois (implique revenu dès M13)
                         },
-                        prepaid_12m: {
-                            price_ttc: 199.99, 
-                            margin_rate: 0.29,
-                            attachment_rate: 0.05, 
-                            duration_months: 12, // Durée de l'offre
-                        }
+                        // Suppression de prepaid_12m
                     },
                     MacBook: {
                         monthly: {
@@ -190,12 +188,7 @@
                             max_duration_months: 48,
                             commitment_months: 12, 
                         },
-                        prepaid_12m: {
-                            price_ttc: 199.99,
-                            margin_rate: 0.42,
-                            attachment_rate: 0.03,
-                            duration_months: 12,
-                        }
+                        // Suppression de prepaid_12m
                     },
                     AirPods: {
                         monthly: {
@@ -207,12 +200,7 @@
                             max_duration_months: 48,
                             commitment_months: 12,
                         },
-                        prepaid_12m: {
-                            price_ttc: 59.99,
-                            margin_rate: 0.305,
-                            attachment_rate: 0.01,
-                            duration_months: 12,
-                        }
+                        // Suppression de prepaid_12m
                     },
                     iPads: {
                         monthly: {
@@ -224,12 +212,7 @@
                             max_duration_months: 48,
                             commitment_months: 12,
                         },
-                        prepaid_12m: {
-                            price_ttc: 99.99,
-                            margin_rate: 0.305,
-                            attachment_rate: 0.02,
-                            duration_months: 12,
-                        }
+                        // Suppression de prepaid_12m
                     },
                     'Apple Watch': {
                         monthly: {
@@ -241,12 +224,7 @@
                             max_duration_months: 48,
                             commitment_months: 12,
                         },
-                        prepaid_12m: {
-                            price_ttc: 59.99,
-                            margin_rate: 0.305,
-                            attachment_rate: 0.01,
-                            duration_months: 12,
-                        }
+                        // Suppression de prepaid_12m
                     },
                 },
                 AP: {
@@ -487,6 +465,7 @@
 
                     // Spécifique iPhones AS (X-Force)
                     if (offerType === 'AS' && product === 'iPhones') {
+                        // Utilise 'global' comme offerKey pour accéder aux variables globales dans renderInputGroup
                         html += `<div class="p-2 mt-2 border-t border-red-200 space-y-2">
                             <h5 class="font-bold text-xs text-xforce">Revenus Complémentaires X-Force (M0)</h5>
                             ${renderInputGroup(offerType, product, 'global', 'Taux de Pose du Film', 'xforce_rate', true, '%')}
@@ -809,6 +788,7 @@
                             else if (isInt) unit = ' M';
 
                             // Format: Section;Catégorie;Produit;Offre;Détail;Valeur A1 (col 5)
+                            // On ajoute la colonne Valeur A1 si ce n'est pas un tableau
                             csv += `INPUTS${separator}PROPOSITION ${offerType}${separator}${product}${separator}${offerLabel} (${offerKey})${separator}${label}${separator}${formatValue(value, isRate, isInt)}${unit}${separator}${separator}${separator}${separator}${separator}\n`;
                         });
                     });
@@ -939,8 +919,13 @@
                             const priceTTC = offerDetails.price_ttc;
                             const salesVolume = volumeMensuel * attachmentRate; // Volume de vente en M0
 
+                            // CALCUL DE LA MARGE UNTAIRE HORS TCA
+                            // 1. Prix HT (hors TVA)
                             const priceHT = priceTTC / (1 + taxRate);
-                            const unitMargin = priceHT * marginRate;
+                            // 2. Prix HT hors TCA (TCA_RATE = 0.09)
+                            const priceHT_no_tca = priceHT * (1 - TCA_RATE); 
+                            // 3. Marge unitaire
+                            const unitMargin = priceHT_no_tca * marginRate;
 
                             if (salesVolume === 0 || unitMargin === 0) return;
 
@@ -949,7 +934,7 @@
                             // --------------------------------------------------------
 
                             if (isPrepaid) {
-                                // Offres Prépayées (AS et AP) : Marge versée en M0 (mois 'm')
+                                // Offres Prépayées (AP uniquement, AS n'a plus d'offre prepaid) : Marge versée en M0 (mois 'm')
                                 results[offerType][yearIndex].prepaid += salesVolume * unitMargin;
                             } else if (isMonthly) {
                                 // Offres Mensuelles
@@ -963,7 +948,8 @@
                                     if (product === 'iPhones') {
                                         const xforceRate = offerData.global.xforce_rate;
                                         const xforceRevenue = offerData.global.xforce_revenue;
-                                        const revenueXForce = salesVolume * xforceRate * (xforceRevenue / (1 + taxRate));
+                                        // Le revenu X-Force n'est pas une assurance, il est calculé avec le TVA classique (20%)
+                                        const revenueXForce = salesVolume * xforceRate * (xforceRevenue / (1 + TVA_RATE));
                                         results.AS[yearIndex].xforce += revenueXForce;
                                     }
 
