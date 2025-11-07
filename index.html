@@ -76,6 +76,20 @@
             padding: 1rem;
             background-color: white;
         }
+
+        /* Styles pour la synthèse générale */
+        .general-summary {
+            background-color: #ffffff;
+            border: 2px solid #6366f1; /* Indigo */
+        }
+        .winning-row {
+            background-color: #e0f2f1; /* Light Teal for winning proposal */
+            font-weight: 700;
+        }
+        .losing-row {
+            opacity: 0.7;
+        }
+
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -86,15 +100,12 @@
     </header>
 
     <div id="app" class="space-y-12">
-        <!-- Section 1: Variables Communes -->
         <section class="bg-white p-6 rounded-xl shadow-lg">
             <h2 class="text-xl font-semibold mb-4 text-indigo-700">1. Variables Communes (Volumes Mensuels Vendus)</h2>
             <div id="global-volumes" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <!-- Volume Inputs will be inserted here by JS -->
-            </div>
+                </div>
         </section>
 
-        <!-- Section 2: Inputs des Variables (avec Onglets) -->
         <div class="xl:w-full space-y-4">
             <h2 class="text-2xl font-bold text-gray-800">2. Variables des Offres</h2>
             
@@ -104,10 +115,8 @@
             </div>
 
             <div id="product-inputs" class="tab-content">
-                <!-- Product Input Cards will be inserted here by JS (depending on active tab) -->
-            </div>
+                </div>
 
-            <!-- Nouveaux boutons d'action pour Sauvegarde et Enregistrement -->
             <div id="action-buttons" class="flex space-x-4 pt-4 border-t border-gray-200">
                 <button onclick="downloadUrlState()" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-150 flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -120,17 +129,18 @@
             </div>
         </div>
 
-        <!-- Section 3 & 4: Synthèse des Projections et Parc Client -->
         <div class="xl:w-full space-y-8">
             <h2 class="text-2xl font-bold text-gray-800">3. Synthèse des Projections de Gains sur 4 Ans</h2>
             <div id="results-summary" class="space-y-6 grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <!-- Result Tables will be inserted here by JS -->
-            </div>
+                </div>
 
             <h2 class="text-2xl font-bold text-gray-800 pt-8 border-t border-gray-300">4. Évolution du Parc Client (Clients Actifs Fin d'Année)</h2>
             <div id="park-summary" class="space-y-6 grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <!-- Park Tables will be inserted here by JS -->
-            </div>
+                </div>
+            
+            <h2 class="text-2xl font-bold text-gray-800 pt-8 border-t border-gray-300">5. Synthèse Générale des Résultats</h2>
+            <div id="general-summary-container" class="space-y-6">
+                </div>
         </div>
     </div>
 
@@ -309,7 +319,12 @@
         };
 
         // Variable globale pour stocker les résultats calculés pour l'export CSV
-        let computedResults = {};
+        // Structure: { AS: { annual: [], total_4_years: 0, products: { iPhone: 0, ... } }, AP: { ... }, park: { ... } }
+        let computedResults = {
+            AS: { annual: [], total_4_years: 0, products: {} },
+            AP: { annual: [], total_4_years: 0, products: {} },
+            park: { AS: { monthly: [], prepaid: [] }, AP: { monthly: [], prepaid: [] } }
+        };
 
         let activeOfferTab = 'AS'; // Track the currently active tab
         const JSON_STATE_KEY = 'v'; // Key for the state data in the URL hash
@@ -358,13 +373,14 @@
         // Rendre les inputs de volume global (commun)
         const renderGlobalVolumes = () => {
             const container = document.getElementById('global-volumes');
-            // Utiliser la fonction de mise à jour pour s'assurer que l'attribut oninput déclenche la sauvegarde
-            const onInputCode = "updateData('AS', 'global', 'tax_rate', true); updateData('AP', 'global', 'tax_rate', true); calculateProjections(); saveStateToUrl();";
+            // Mettre à jour le code oninput pour utiliser l'ID du taux fiscal correctement
+            const onInputTaxRateCode = "updateData('AS', 'global', 'global', 'tax_rate', true, false, this.value); updateData('AP', 'global', 'global', 'tax_rate', true, false, this.value); calculateProjections(); saveStateToUrl();";
             
+            // L'objet global du taux fiscal est maintenant 'AS.global'
             container.innerHTML = `
                 <div class="input-group col-span-5 mb-4 p-2 bg-gray-50 rounded-lg border-none">
                     <label class="font-bold text-gray-700">Taux Fiscal (TTC vers HT)</label>
-                    <input type="number" step="0.01" min="0" id="global-tax-rate" value="${(data.offers.AS.global.tax_rate * 100).toFixed(2)}" oninput="${onInputCode}" class="text-right w-full font-bold bg-white" />
+                    <input type="number" step="0.01" min="0" id="global-tax-rate" value="${(data.offers.AS.global.tax_rate * 100).toFixed(2)}" oninput="${onInputTaxRateCode}" class="text-right w-full font-bold bg-white" />
                     <span class="text-right text-gray-500 ml-1">%</span>
                 </div>
             `;
@@ -381,6 +397,9 @@
                     </div>
                 `;
             });
+            
+            // Mise à jour de la valeur initiale du taux fiscal
+            document.getElementById('global-tax-rate').value = (data.offers.AS.global.tax_rate * 100).toFixed(2);
         };
 
         // Rendre un groupe d'inputs (Prix, Taux, Marge)
@@ -520,6 +539,9 @@
             const borderColor = offerType === 'AS' ? 'border-blue-500' : 'border-green-500';
             const bgColorClass = offerType === 'AS' ? 'bg-blue-50' : 'bg-green-50';
 
+            // Fonction de formatage
+            const formatCurrency = (num) => num.toLocaleString('fr-FR', { minimumFractionDigits: 0 });
+
             let html = `
                 <div class="bg-white p-6 rounded-xl shadow-lg border-t-8 ${borderColor}">
                     <h3 class="text-xl font-bold mb-4 ${colorClass}">${offerName}</h3>
@@ -534,31 +556,31 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr>
                                     <td class="px-2 py-1 whitespace-nowrap text-xs text-monthly font-semibold">Total Précompte / Marge Mensuelle</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${results[i].monthly.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${formatCurrency(results[i].monthly)} €</td>`).join('')}
                                 </tr>
                                 <tr>
                                     <td class="px-2 py-1 whitespace-nowrap text-xs text-prepaid font-semibold">Total Offres Prépayées</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${results[i].prepaid.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${formatCurrency(results[i].prepaid)} €</td>`).join('')}
                                 </tr>
                                 ${offerType === 'AS' ? `
                                 <tr>
                                     <td class="px-2 py-1 whitespace-nowrap text-xs text-xforce font-semibold">Total Revenus X-Force (iPhones)</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${results[i].xforce.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${formatCurrency(results[i].xforce)} €</td>`).join('')}
                                 </tr>
                                 <tr>
                                     <td class="px-2 py-1 whitespace-nowrap text-xs text-profit font-semibold">Profit Sharing (Annuel)</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${results[i].profitSharing.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-xs">${formatCurrency(results[i].profitSharing)} €</td>`).join('')}
                                 </tr>
                                 ` : ''}
                                 <tr class="border-t-2 border-gray-400 font-extrabold">
                                     <td class="px-2 py-1 whitespace-nowrap text-sm ${colorClass}">TOTAL ANNUEL</td>
-                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-sm ${colorClass}">${results[i].total.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</td>`).join('')}
+                                    ${Array.from({ length: NB_YEARS }, (_, i) => `<td class="result-cell px-2 py-1 text-sm ${colorClass}">${formatCurrency(results[i].total)} €</td>`).join('')}
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="mt-4 p-3 ${bgColorClass} rounded-lg">
-                        <p class="text-sm font-bold ${colorClass}">Total sur 4 Ans : ${results.total_4_years.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €</p>
+                        <p class="text-sm font-bold ${colorClass}">Total sur 4 Ans : ${formatCurrency(results.total_4_years)} €</p>
                     </div>
                 </div>
             `;
@@ -611,13 +633,87 @@
             return html;
         };
 
+        // --- NOUVELLE FONCTION DE RENDU : Synthèse Générale ---
+        const renderGeneralSummary = () => {
+            const container = document.getElementById('general-summary-container');
+            const resultsAS = computedResults.AS;
+            const resultsAP = computedResults.AP;
+            
+            if (!resultsAS || !resultsAP || !resultsAS.total_4_years) return; // Ne pas afficher si les données ne sont pas prêtes
+
+            const formatCurrency = (num) => num.toLocaleString('fr-FR', { minimumFractionDigits: 0 }) + ' €';
+            const totalAS = resultsAS.total_4_years;
+            const totalAP = resultsAP.total_4_years;
+            const overallWinner = totalAS > totalAP ? 'AS' : (totalAP > totalAS ? 'AP' : 'Égalité');
+            const difference = Math.abs(totalAS - totalAP);
+
+            let html = `
+                <div class="general-summary p-6 rounded-xl shadow-2xl space-y-4">
+                    <h3 class="text-2xl font-bold text-indigo-700 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-indigo-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        Conclusion Générale sur 4 Ans
+                    </h3>
+                    
+                    <p class="text-lg font-semibold text-gray-800 border-b pb-3">
+                        La **PROPOSITION ${overallWinner}** est la plus intéressante, générant un total de gains de 
+                        <span class="text-3xl font-extrabold ${overallWinner === 'AS' ? 'text-blue-600' : (overallWinner === 'AP' ? 'text-green-600' : 'text-gray-600')}">${formatCurrency(Math.max(totalAS, totalAP))}</span>.
+                        <br>
+                        Soit une différence de <span class="font-extrabold text-red-500">${formatCurrency(difference)}</span> par rapport à l'autre proposition.
+                    </p>
+
+                    <h4 class="text-xl font-bold text-gray-700 pt-2">Comparaison Détaillée des Revenus par Produit (Total 4 Ans)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 border border-gray-300 rounded-lg">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Produit</th>
+                                    <th class="px-4 py-2 text-right text-sm font-medium text-blue-700">Prop. AS</th>
+                                    <th class="px-4 py-2 text-right text-sm font-medium text-green-700">Prop. AP</th>
+                                    <th class="px-4 py-2 text-right text-sm font-medium text-gray-700">Meilleure Offre</th>
+                                    <th class="px-4 py-2 text-right text-sm font-medium text-gray-700">Écart</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${Object.keys(data.volumes).map(product => {
+                                    const revenueAS = resultsAS.products[product] || 0;
+                                    const revenueAP = resultsAP.products[product] || 0;
+                                    const productWinner = revenueAS > revenueAP ? 'AS' : (revenueAP > revenueAS ? 'AP' : 'Égalité');
+                                    const productDiff = Math.abs(revenueAS - revenueAP);
+                                    const isWinningRow = (overallWinner === 'AS' && productWinner === 'AS') || (overallWinner === 'AP' && productWinner === 'AP');
+
+                                    return `
+                                        <tr class="${productWinner !== 'Égalité' ? (productWinner === overallWinner ? 'winning-row' : 'losing-row') : ''}">
+                                            <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${product}</td>
+                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-right ${productWinner === 'AS' ? 'font-bold text-blue-700' : 'text-gray-600'}">${formatCurrency(revenueAS)}</td>
+                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-right ${productWinner === 'AP' ? 'font-bold text-green-700' : 'text-gray-600'}">${formatCurrency(revenueAP)}</td>
+                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-right font-semibold">
+                                                ${productWinner !== 'Égalité' ? `Prop. ${productWinner}` : 'Égalité'}
+                                            </td>
+                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-right text-red-500">${formatCurrency(productDiff)}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                <tr class="bg-gray-200 font-extrabold border-t-2 border-gray-400">
+                                    <td class="px-4 py-2 text-lg text-gray-800">GRAND TOTAL</td>
+                                    <td class="px-4 py-2 text-lg text-right text-blue-700">${formatCurrency(totalAS)}</td>
+                                    <td class="px-4 py-2 text-lg text-right text-green-700">${formatCurrency(totalAP)}</td>
+                                    <td class="px-4 py-2 text-lg text-right text-indigo-700">Prop. ${overallWinner}</td>
+                                    <td class="px-4 py-2 text-lg text-right text-red-600">${formatCurrency(difference)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = html;
+        };
 
         // --- Fonctions de mise à jour des données ---
 
         // Mise à jour des volumes globaux
         const updateVolume = (product, value) => {
             const num = parseFloat(value.replace(/[^0-9,.-]/g, '').replace(',', '.'));
-            data.volumes[product] = isNaN(num) ? 0 : num;
+            data.volumes[product] = isNaN(num) ? 0 : parseInt(num); // S'assurer que les volumes sont des entiers
         };
 
         // Mise à jour des autres variables
@@ -634,17 +730,22 @@
             if (dataKey.startsWith('profitSharing')) {
                 // Cas spécifique du Profit Sharing global
                 data.offers[offerType].global[dataKey] = num;
-            } else if (dataKey === 'xforce_rate' || dataKey === 'xforce_revenue' || dataKey === 'tax_rate') {
-                 // Cas spécifique X-Force et Taux Fiscal
+            } else if (dataKey === 'xforce_rate' || dataKey === 'xforce_revenue') {
+                 // Cas spécifique X-Force
                 data.offers[offerType].global[dataKey] = isRate ? num / 100 : num;
+            } else if (dataKey === 'tax_rate') {
+                // Cas spécifique Taux Fiscal (applique aux deux offres via l'input global)
+                data.offers['AS'].global[dataKey] = isRate ? num / 100 : num;
+                data.offers['AP'].global[dataKey] = isRate ? num / 100 : num;
             }
             else {
                 // Cas standard
-                data.offers[offerType][product][offerKey][dataKey] = isRate ? num / 100 : num;
+                data.offers[offerType][product][offerKey][dataKey] = isRate ? num / 100 : (isInt ? parseInt(num) : num);
             }
         };
 
         // --- Fonctions de gestion de l'état (URL) ---
+        // (Les fonctions saveStateToUrl, loadStateFromUrl restent inchangées)
 
         /**
          * Sauvegarde l'état actuel de 'data' dans le hash de l'URL.
@@ -698,7 +799,8 @@
             }
         };
 
-        // --- Fonctions de téléchargement (Nouveaux Ajouts) ---
+
+        // --- Fonctions de téléchargement (Restent inchangées) ---
 
         /**
          * Télécharge un fichier texte contenant l'URL actuelle avec l'état.
@@ -835,6 +937,12 @@
 
                     csv += `OUTPUTS${separator}PROPOSITION ${offerType}${separator}Détail: ${label}${separator}${separator}${separator}${formatValue(y1)}${separator}${formatValue(y2)}${separator}${formatValue(y3)}${separator}${formatValue(y4)}${separator}${formatValue(categoryTotal)}${separator}€ HT\n`;
                 });
+                
+                // Détail des revenus par produit
+                Object.keys(computedResults[offerType].products).forEach(product => {
+                    const totalProductRevenue = computedResults[offerType].products[product];
+                    csv += `OUTPUTS${separator}PROPOSITION ${offerType}${separator}Détail par Produit: ${product}${separator}${separator}${separator}${separator}${separator}${separator}${separator}${formatValue(totalProductRevenue)}${separator}€ HT\n`;
+                });
             });
 
 
@@ -871,7 +979,7 @@
             document.body.removeChild(a);
         };
 
-        // --- Fonction de calcul principal ---
+        // --- Fonction de calcul principal (MODIFIÉE) ---
 
         const calculateProjections = () => {
             const results = { AS: [], AP: [] };
@@ -882,11 +990,15 @@
                 AP: { monthly: [0, 0, 0, 0], prepaid: [0, 0, 0, 0] }
             };
 
-            // Initialiser les résultats annuels
-            for (let i = 0; i < NB_YEARS; i++) {
-                results.AS.push({ monthly: 0, prepaid: 0, xforce: 0, profitSharing: 0, total: 0 });
-                results.AP.push({ monthly: 0, prepaid: 0, xforce: 0, profitSharing: 0, total: 0 });
-            }
+            // Initialiser les résultats annuels et par produit
+            ['AS', 'AP'].forEach(offerType => {
+                computedResults[offerType].products = {}; // Réinitialiser les revenus par produit
+                results[offerType] = [];
+                for (let i = 0; i < NB_YEARS; i++) {
+                    results[offerType].push({ monthly: 0, prepaid: 0, xforce: 0, profitSharing: 0, total: 0 });
+                }
+            });
+
 
             const productKeys = Object.keys(data.volumes);
 
@@ -908,6 +1020,12 @@
                         const offerData = data.offers[offerType];
                         const taxRate = offerData.global.tax_rate;
                         const productOfferData = offerData[product];
+                        
+                        // Initialisation du revenu produit
+                        if (!computedResults[offerType].products[product]) {
+                            computedResults[offerType].products[product] = 0;
+                        }
+
                         if (!productOfferData) return; // Skip if product not offered by this partner
 
                         Object.entries(productOfferData).forEach(([offerKey, offerDetails]) => {
@@ -934,8 +1052,10 @@
                             // --------------------------------------------------------
 
                             if (isPrepaid) {
-                                // Offres Prépayées (AP uniquement, AS n'a plus d'offre prepaid) : Marge versée en M0 (mois 'm')
-                                results[offerType][yearIndex].prepaid += salesVolume * unitMargin;
+                                // Offres Prépayées (AP uniquement) : Marge versée en M0 (mois 'm')
+                                const revenuePrepaid = salesVolume * unitMargin;
+                                results[offerType][yearIndex].prepaid += revenuePrepaid;
+                                computedResults[offerType].products[product] += revenuePrepaid;
                             } else if (isMonthly) {
                                 // Offres Mensuelles
 
@@ -943,6 +1063,7 @@
                                     // AS Mensuel : 12 mois de précompte en M0 (mois 'm')
                                     const precompte = salesVolume * unitMargin * 12;
                                     results.AS[yearIndex].monthly += precompte;
+                                    computedResults.AS.products[product] += precompte;
 
                                     // Revenu X-Force (AS, iPhones, M0)
                                     if (product === 'iPhones') {
@@ -951,6 +1072,7 @@
                                         // Le revenu X-Force n'est pas une assurance, il est calculé avec le TVA classique (20%)
                                         const revenueXForce = salesVolume * xforceRate * (xforceRevenue / (1 + TVA_RATE));
                                         results.AS[yearIndex].xforce += revenueXForce;
+                                        computedResults.AS.products[product] += revenueXForce;
                                     }
 
                                     // Reprise de commission (Clawback) en M+2 (mois m+2)
@@ -958,9 +1080,11 @@
                                     if (clawbackMonth < TOTAL_MONTHS) {
                                         const clawbackYearIndex = Math.floor(clawbackMonth / MONTHS_PER_YEAR);
                                         const renunciationRate = offerDetails.renunciation_rate;
-                                        const volumeClawback = salesVolume * Math.max(0, renunciationRate - 0.15);
+                                        // Reprise uniquement sur la partie au-delà du "droit de rétractation" (estimation 15%)
+                                        const volumeClawback = salesVolume * Math.max(0, renunciationRate - 0.15); 
                                         const repriseAmount = volumeClawback * unitMargin * 12; // Reprise sur 12 mois
                                         results.AS[clawbackYearIndex].monthly -= repriseAmount;
+                                        computedResults.AS.products[product] -= repriseAmount;
                                     }
                                 }
                                 // AP Mensuel : Pas de précompte en M0
@@ -980,19 +1104,20 @@
                                 for (let k = m + 1; k < TOTAL_MONTHS; k++) {
                                     const parkYearIndex = Math.floor(k / MONTHS_PER_YEAR);
                                     let activePark = activeParkInitial;
+                                    const monthInContract = k - m; // Mois de vie du contrat (M1, M2, ...)
 
                                     // 1. Durée de vie maximale : Si le mois de vie du contrat dépasse la durée max
-                                    if (k >= m + maxDuration) {
+                                    if (monthInContract >= maxDuration) {
                                         activePark = 0;
                                     } else {
                                         // 2. Décroissance du parc liée à la renonciation (M1)
-                                        if (k === m + 1) { 
+                                        if (monthInContract === 1) { 
                                             activePark *= (1 - renunciationRate);
                                         }
 
                                         // 3. Décroissance du parc liée au Churn (dès M13)
-                                        if (k >= m + 13) {
-                                            const churnMonths = k - (m + 12);
+                                        if (monthInContract >= 13) {
+                                            const churnMonths = monthInContract - 12;
                                             activePark *= Math.pow((1 - churnRate), churnMonths);
                                         }
                                     }
@@ -1001,12 +1126,16 @@
                                     if (activePark > 0) {
                                         if (offerType === 'AS') {
                                             // AS: Revenu à partir de M13 uniquement
-                                            if (k >= m + 12) {
-                                                results.AS[parkYearIndex].monthly += activePark * unitMargin;
+                                            if (monthInContract >= 13) {
+                                                const revenueMonthly = activePark * unitMargin;
+                                                results.AS[parkYearIndex].monthly += revenueMonthly;
+                                                computedResults.AS.products[product] += revenueMonthly;
                                             }
                                         } else if (offerType === 'AP') {
                                             // AP: Revenu à partir de M1 (Sans engagement)
-                                            results.AP[parkYearIndex].monthly += activePark * unitMargin;
+                                            const revenueMonthly = activePark * unitMargin;
+                                            results.AP[parkYearIndex].monthly += revenueMonthly;
+                                            computedResults.AP.products[product] += revenueMonthly;
                                         }
                                     }
                                 }
@@ -1080,10 +1209,19 @@
                 results[offerType].total_4_years = total4Years;
 
                 // --- Sauvegarde des résultats dans la variable globale pour l'export CSV ---
-                computedResults[offerType] = {
-                    annual: results[offerType].map(r => ({ ...r })),
-                    total_4_years: total4Years
-                };
+                computedResults[offerType].annual = results[offerType].map(r => ({ ...r }));
+                computedResults[offerType].total_4_years = total4Years;
+                
+                // Arrondir les revenus par produit (total 4 ans)
+                Object.keys(computedResults[offerType].products).forEach(product => {
+                    computedResults[offerType].products[product] = parseFloat(computedResults[offerType].products[product].toFixed(2));
+                });
+
+                // Ajouter le Profit Sharing au total AS par produit (convention : on l'ajoute au total iPhones car il s'agit du produit principal)
+                if (offerType === 'AS') {
+                    const totalProfitSharing = results.AS.reduce((sum, year) => sum + year.profitSharing, 0);
+                    computedResults.AS.products.iPhones = (computedResults.AS.products.iPhones || 0) + totalProfitSharing;
+                }
             });
             
             // --- Sauvegarde des résultats du parc client ---
@@ -1098,6 +1236,9 @@
             document.getElementById('park-summary').innerHTML =
                 renderParkSummary('AS', parkSnapshots.AS) +
                 renderParkSummary('AP', parkSnapshots.AP);
+                
+            // NOUVEAU : Affichage de la synthèse générale
+            renderGeneralSummary();
         };
 
         // Fonction d'initialisation
